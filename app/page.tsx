@@ -5,12 +5,30 @@ import icon from '../public/icon.png';
 import Button from "./Button";
 import Input from "./Input";
 import Modal from "./Modal";
+import Table from "./Table";
+import Chart from "./Chart";
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
+ 
+  // const sampleData = [
+  //   { name: 'Bench Press', weight: 225, reps: 5, date: '2023-10-01' },
+  //   { name: 'Squat', weight: 315, reps: 3, date: '2023-10-01' },
+  //   { name: 'Deadlift', weight: 405, reps: 2, date: '2023-10-01' },
+  // ];
+
+  const sampleData = [
+  { name: 'Bench Press', weight: 225, reps: 5, date: '2023-10-01' },
+  { name: 'Squat', weight: 315, reps: 3, date: '2023-10-01' },
+  { name: 'Deadlift', weight: 405, reps: 1, date: '2023-10-01' },
+  { name: 'Bench Press', weight: 230, reps: 5, date: '2023-10-05' },
+  { name: 'Squat', weight: 325, reps: 3, date: '2023-10-05' },
+  { name: 'Deadlift', weight: 405, reps: 2, date: '2023-10-05' },
+];
+
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
@@ -25,6 +43,9 @@ export default function Home() {
 
         {/* Button that opens the modal */}
         <Button dark onClick={handleOpenModal}>add a lift</Button>
+
+        <Table data={sampleData} />
+        <Chart data={sampleData} />
 
         {/* Modal */}
         {isModalOpen && (

@@ -27,7 +27,7 @@ const Modal: React.FC<ModalProps> = ({ children, open = false, onClose }) => {
 
   return open ? (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+      className="transition duration-300 ease-in-out fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
       onClick={onClose}
     >
       <div
@@ -37,7 +37,7 @@ const Modal: React.FC<ModalProps> = ({ children, open = false, onClose }) => {
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 text-xl"
+          className="cursor-pointer absolute top-3 right-3 transition ease-in-out text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 text-xl"
           aria-label="Close modal"
         >
           &times;
@@ -46,7 +46,7 @@ const Modal: React.FC<ModalProps> = ({ children, open = false, onClose }) => {
         {children}
       </div>
     </div>
-  ) : null;
+  ) : <></>
 };
 
 export default Modal;
