@@ -10,14 +10,23 @@ import Table from "./Table";
 import Chart from "./Chart";
 import AuthModal from "./AuthModal";
 import supabase from '@/lib/supabase';
+import { useAuthModal } from '@/hooks/useAuthModal';
+
 
 export default function Home() {
-  const [showAuth, setShowAuth] = useState(false);
+  const { open, setOpen } = useAuthModal();
   const [session, setSession] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
+
+  // Handle user logout
+  //   const handleLogout = async () => {
+  //   await supabase.auth.signOut();
+  //   setSession(null);
+  // };
+
 
   useEffect(() => {
     // Get current session on mount
@@ -34,11 +43,6 @@ export default function Home() {
       listener.subscription.unsubscribe();
     };
   }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-  };
 
   const sampleData = [
     { name: 'Bench Press', weight: 225, reps: 5, date: '2023-10-01' },
@@ -60,21 +64,18 @@ export default function Home() {
           a better way to track your progress
         </div>
 
+        <AuthModal open={open} onClose={() => setOpen(false)} />
+
         {/* AUTH STATE CHECK */}
         {!session ? (
           <>
-            <Button onClick={() => setShowAuth(true)} dark>
+            <Button onClick={() => setOpen(true)} dark>
               Log In / Sign Up
             </Button>
-
-            {showAuth && (
-              <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
-            )}
           </>
         ) : (
           <>
             <Button dark onClick={handleOpenModal}>Add a Lift</Button>
-            <Button dark onClick={handleLogout}>Log Out</Button>
 
             <Table data={sampleData} />
             <Chart data={sampleData} />

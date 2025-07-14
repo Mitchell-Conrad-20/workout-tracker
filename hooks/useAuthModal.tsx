@@ -2,10 +2,12 @@
 
 import { createContext, useContext, useState } from 'react';
 
-const AuthModalContext = createContext({
-  open: false,
-  setOpen: (val: boolean) => {},
-});
+interface AuthModalContextType {
+  open: boolean;
+  setOpen: (value: boolean) => void;
+}
+
+const AuthModalContext = createContext<AuthModalContextType | undefined>(undefined);
 
 export const AuthModalProvider = ({ children }: { children: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
@@ -16,4 +18,8 @@ export const AuthModalProvider = ({ children }: { children: React.ReactNode }) =
   );
 };
 
-export const useAuthModal = () => useContext(AuthModalContext);
+export const useAuthModal = () => {
+  const context = useContext(AuthModalContext);
+  if (!context) throw new Error('useAuthModal must be used within AuthModalProvider');
+  return context;
+};

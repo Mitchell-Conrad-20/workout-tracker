@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import HamburgerMenu from './HamburgerMenu';
+import { AuthModalProvider } from '@/hooks/useAuthModal';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,20 +19,15 @@ export const metadata: Metadata = {
   description: "a better way to track your progress",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <HamburgerMenu />
-        {children}
+      <body>
+        <AuthModalProvider>
+          <HamburgerMenu />
+          {children}
+        </AuthModalProvider>
       </body>
     </html>
   );
 }
-

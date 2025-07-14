@@ -65,13 +65,16 @@ export default function HamburgerMenu() {
                 Log Out
               </Button>
             ) : (
-              <Link
-                href="/"
-                onClick={() => setIsOpen(false)}
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  setOpen(true); // ✅ triggers modal
+                }}
                 className="text-blue-500 hover:underline transition duration-200"
               >
                 Log In / Sign Up
-              </Link>
+              </button>
+
             )}
           </div>
         </div>
