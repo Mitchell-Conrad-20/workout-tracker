@@ -14,7 +14,12 @@ type Lift = {
 };
 
 type ChartProps = {
-  data: Lift[];
+  data: {
+    name: string;
+    weight: number;
+    reps: number;
+    date: string;
+  }[];
 };
 
 const Chart: React.FC<ChartProps> = ({ data }) => {
