@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import icon from '../public/icon.png';
-import iconWhite from '../public/icon-white.png';
+// import iconWhite from '../public/icon-white.png';
 import Button from './Button';
 import Input from './Input';
 import Modal from './Modal';
@@ -11,17 +11,25 @@ import Chart from './Chart';
 import AuthModal from './AuthModal';
 import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
+import { Session } from '@supabase/supabase-js';
+
+type Lift = {
+  name: string;
+  weight: number;
+  reps: number;
+  date: string;
+};
 
 export default function Home() {
   const { open, setOpen } = useAuthModal();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [liftName, setLiftName] = useState('');
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
 
-  const [liftData, setLiftData] = useState<any[]>([]);
+  const [liftData, setLiftData] = useState<Lift[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedLifts, setSelectedLifts] = useState<string[]>([]);
 
@@ -58,8 +66,8 @@ export default function Home() {
 
       if (error) {
         console.error('Error fetching lifts:', error.message);
-      } else {
-        setLiftData(data);
+      } else if (data) {
+        setLiftData(data as Lift[]);
       }
 
       setLoading(false);
@@ -93,7 +101,7 @@ export default function Home() {
       .eq('user_id', userId)
       .order('date', { ascending: true });
 
-    if (!fetchError) setLiftData(data);
+    if (!fetchError && data) setLiftData(data as Lift[]);
 
     setLiftName('');
     setWeight('');
@@ -126,7 +134,7 @@ export default function Home() {
           a better way to track your progress
         </div>
 
-        <div className='md:w-2xl'/>
+        <div className='md:w-2xl' />
 
         <AuthModal open={open} onClose={() => setOpen(false)} />
 

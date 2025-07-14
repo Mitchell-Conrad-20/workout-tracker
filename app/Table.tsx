@@ -1,8 +1,18 @@
 import React from 'react';
 
+interface LiftData {
+  id: number;
+  user_id?: string;
+  name: string;
+  weight: number;
+  reps: number;
+  date: string;
+  [key: string]: string | number | undefined;
+}
+
 interface TableProps {
-  data: Record<string, any>[];
-  onEdit?: (lift: any) => void;
+  data: LiftData[];
+  onEdit?: (lift: LiftData) => void;
   onDelete?: (id: number) => void;
 }
 
@@ -35,7 +45,7 @@ const Table: React.FC<TableProps> = ({ data, onEdit, onDelete }) => {
         ))}
         {(onEdit || onDelete) && (
           <div className="px-4 py-2 font-bold bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border-b border-neutral-300 dark:border-neutral-700">
-          actions
+            actions
           </div>
         )}
 

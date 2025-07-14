@@ -19,31 +19,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-  setLoading(true);
-  setError(null);
-  try {
-    let result;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = mode === 'login'
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
 
-    if (mode === 'login') {
-      result = await supabase.auth.signInWithPassword({ email, password });
-    } else {
-      result = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      if (result.error) throw result.error;
+
+      onClose(); // Close modal on success
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong');
+      }
+    } finally {
+      setLoading(false);
     }
-
-    const { error } = result;
-
-    if (error) throw error;
-
-    onClose(); // Close modal on success
-  } catch (err: any) {
-    setError(err.message || 'Something went wrong');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <Modal open={open} onClose={onClose}>

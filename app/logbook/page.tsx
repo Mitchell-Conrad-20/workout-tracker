@@ -1,33 +1,42 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
-import icon from '../public/icon.png';
+import React, { useEffect, useState, useCallback } from 'react';
+// import icon from '../public/icon.png';
 import Button from '../Button';
 import Input from '../Input';
 import Modal from '../Modal';
-import Chart from '../Chart';
+// import Chart from '../Chart';
 import Table from '../Table';
 import AuthModal from '../AuthModal';
 import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
+import { Session } from '@supabase/supabase-js';
+
+type Lift = {
+  id: number;
+  user_id?: string;
+  name: string;
+  weight: number;
+  reps: number;
+  date: string;
+};
 
 export default function Home() {
   const { open, setOpen } = useAuthModal();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [liftName, setLiftName] = useState('');
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
 
-  const [liftData, setLiftData] = useState<any[]>([]);
+  const [liftData, setLiftData] = useState<Lift[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedLifts, setSelectedLifts] = useState<string[]>([]);
 
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<[string, string]>(["", ""]);
-  const [editingLift, setEditingLift] = useState<any | null>(null);
+  const [editingLift, setEditingLift] = useState<Lift | null>(null);
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => {
@@ -49,7 +58,7 @@ export default function Home() {
     };
   }, []);
 
-  const fetchLifts = async () => {
+  const fetchLifts = useCallback(async () => {
     if (!session?.user) return;
     setLoading(true);
 
@@ -59,13 +68,13 @@ export default function Home() {
       .eq('user_id', session.user.id)
       .order('date', { ascending: true });
 
-    if (!error) setLiftData(data);
+    if (!error && data) setLiftData(data as Lift[]);
     setLoading(false);
-  };
+  }, [session]);
 
   useEffect(() => {
     fetchLifts();
-  }, [session]);
+  }, [fetchLifts]);
 
   const handleAddLift = async () => {
     if (!session) return;
@@ -140,8 +149,8 @@ export default function Home() {
                   onEdit={(lift) => {
                     setEditingLift(lift);
                     setLiftName(lift.name);
-                    setWeight(lift.weight);
-                    setReps(lift.reps);
+                    setWeight(String(lift.weight));
+                    setReps(String(lift.reps));
                     setIsModalOpen(true);
                   }}
                   onDelete={(id) => handleDeleteLift(id)}
@@ -202,8 +211,6 @@ export default function Home() {
           </>
         )}
       </main>
-
-
     </div>
   );
 }
