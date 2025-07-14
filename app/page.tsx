@@ -127,14 +127,12 @@ export default function Home() {
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <h1 className="text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">
-          Workout Tracker
+          workout tracker
         </h1>
 
         <div className="font-[family-name:var(--font-geist-mono)]">
           a better way to track your progress
         </div>
-
-        <div className='md:w-2xl' />
 
         <AuthModal open={open} onClose={() => setOpen(false)} />
 
@@ -144,8 +142,15 @@ export default function Home() {
           </Button>
         ) : (
           <>
-            <Button dark onClick={handleOpenModal}>add a lift</Button>
-            <Button dark onClick={() => setIsFilterModalOpen(true)}>filter lifts</Button>
+            <div className="flex flex-col md:flex-row gap-2 w-full">
+              <Button dark onClick={handleOpenModal} className="w-full md:w-auto">
+                add a lift
+              </Button>
+              <Button dark onClick={() => setIsFilterModalOpen(true)} className="w-full md:w-auto">
+                filter lifts
+              </Button>
+            </div>
+
             {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
               <Button onClick={handleClearFilters} className="text-sm">
                 clear filters

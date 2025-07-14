@@ -24,17 +24,13 @@ const Table: React.FC<TableProps> = ({ data, onEdit, onDelete }) => {
   const headers = Object.keys(data[0]).filter(
     (key) => key !== 'id' && key !== 'user_id'
   );
-  const columnCount = headers.length + (onEdit || onDelete ? 1 : 0);
 
   return (
-    <div className="w-full overflow-x-auto">
-      <div
-        className="grid text-sm"
-        style={{
-          gridTemplateColumns: `repeat(${columnCount}, minmax(100px, 1fr))`,
-        }}
-      >
-        {/* Header Row */}
+    <div className="w-full">
+      {/* Grid table on medium and larger screens */}
+      <div className="hidden md:grid text-sm w-full overflow-x-auto" style={{
+        gridTemplateColumns: `repeat(${headers.length + (onEdit || onDelete ? 1 : 0)}, minmax(100px, 1fr))`,
+      }}>
         {headers.map((header) => (
           <div
             key={header}
@@ -49,12 +45,11 @@ const Table: React.FC<TableProps> = ({ data, onEdit, onDelete }) => {
           </div>
         )}
 
-        {/* Data Rows */}
         {data.map((row, rowIndex) => (
-          <React.Fragment key={row.id || rowIndex}>
+          <React.Fragment key={row.id}>
             {headers.map((key) => (
               <div
-                key={`${rowIndex}-${key}`}
+                key={`${row.id}-${key}`}
                 className={`px-4 py-2 border-b border-neutral-200 dark:border-neutral-700 ${
                   rowIndex % 2 === 0
                     ? 'bg-white dark:bg-neutral-900'
@@ -91,6 +86,45 @@ const Table: React.FC<TableProps> = ({ data, onEdit, onDelete }) => {
               </div>
             )}
           </React.Fragment>
+        ))}
+      </div>
+
+      {/* Mobile card view */}
+      <div className="md:hidden flex flex-col gap-4">
+        {data.map((row) => (
+          <div
+            key={row.id}
+            className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 bg-white dark:bg-neutral-900 shadow-sm"
+          >
+            <div className="flex flex-col gap-1 text-sm text-neutral-700 dark:text-neutral-200">
+              {headers.map((key) => (
+                <div key={key}>
+                  <span className="font-medium capitalize">{key}: </span>
+                  <span>{String(row[key])}</span>
+                </div>
+              ))}
+            </div>
+            {(onEdit || onDelete) && (
+              <div className="flex gap-4 mt-4">
+                {onEdit && (
+                  <button
+                    onClick={() => onEdit(row)}
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    Edit
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(row.id)}
+                    className="text-red-600 hover:underline text-sm"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>

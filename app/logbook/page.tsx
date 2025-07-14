@@ -132,8 +132,17 @@ export default function Home() {
 
         {session && (
           <>
-            <Button dark onClick={handleOpenModal}>add a Lift</Button>
-            <Button dark onClick={() => setIsFilterModalOpen(true)}>filter lifts</Button>
+            <div className="flex gap-4 mb-4">
+              <div className="flex flex-col md:flex-row gap-2 w-full">
+                <Button dark onClick={handleOpenModal} className="w-full md:w-auto">
+                  add a lift
+                </Button>
+                <Button dark onClick={() => setIsFilterModalOpen(true)} className="w-full md:w-auto">
+                  filter lifts
+                </Button>
+              </div>
+
+            </div>
             {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
               <Button onClick={handleClearFilters} className="text-sm">
                 clear filters
