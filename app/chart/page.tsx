@@ -1,20 +1,16 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-// import icon from '../public/icon.png';
+import React, { useEffect, useState } from 'react';
 import Button from '../Button';
 import Input from '../Input';
 import Modal from '../Modal';
-// import Chart from '../Chart';
-import Table from '../Table';
+import Chart from '../Chart';
 import AuthModal from '../AuthModal';
 import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { Session } from '@supabase/supabase-js';
 
 type Lift = {
-  id: number;
-  user_id?: string;
   name: string;
   weight: number;
   reps: number;
@@ -36,13 +32,9 @@ export default function Home() {
 
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<[string, string]>(["", ""]);
-  const [editingLift, setEditingLift] = useState<Lift | null>(null);
 
   const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingLift(null);
-  };
+  const handleCloseModal = () => setIsModalOpen(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -58,53 +50,60 @@ export default function Home() {
     };
   }, []);
 
-  const fetchLifts = useCallback(async () => {
-    if (!session?.user) return;
-    setLoading(true);
-
-    const { data, error } = await supabase
-      .from('lifts')
-      .select('id, name, weight, reps, date')
-      .eq('user_id', session.user.id)
-      .order('date', { ascending: true });
-
-    if (!error && data) setLiftData(data as Lift[]);
-    setLoading(false);
-  }, [session]);
-
   useEffect(() => {
+    const fetchLifts = async () => {
+      if (!session?.user) return;
+
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('lifts')
+        .select('name, weight, reps, date')
+        .eq('user_id', session.user.id)
+        .order('date', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching lifts:', error.message);
+      } else if (data) {
+        setLiftData(data as Lift[]);
+      }
+
+      setLoading(false);
+    };
+
     fetchLifts();
-  }, [fetchLifts]);
+  }, [session]);
 
   const handleAddLift = async () => {
     if (!session) return;
 
     const userId = session.user.id;
-    const payload = {
-      user_id: userId,
-      name: liftName,
-      weight: Number(weight),
-      reps: Number(reps),
-      date: new Date().toISOString().split('T')[0],
-    };
+    const { error } = await supabase.from('lifts').insert([
+      {
+        user_id: userId,
+        name: liftName,
+        weight: Number(weight),
+        reps: Number(reps),
+        date: new Date().toISOString().split('T')[0],
+      },
+    ]);
 
-    const { error } = editingLift
-      ? await supabase.from('lifts').update(payload).eq('id', editingLift.id)
-      : await supabase.from('lifts').insert([payload]);
-
-    if (!error) {
-      fetchLifts();
-      setLiftName('');
-      setWeight('');
-      setReps('');
-      setEditingLift(null);
-      handleCloseModal();
+    if (error) {
+      console.error('Error adding lift:', error.message);
+      return;
     }
-  };
 
-  const handleDeleteLift = async (id: number) => {
-    const { error } = await supabase.from('lifts').delete().eq('id', id);
-    if (!error) fetchLifts();
+    const { data, error: fetchError } = await supabase
+      .from('lifts')
+      .select('name, weight, reps, date')
+      .eq('user_id', userId)
+      .order('date', { ascending: true });
+
+    if (!fetchError && data) setLiftData(data as Lift[]);
+
+    setLiftName('');
+    setWeight('');
+    setReps('');
+    handleCloseModal();
   };
 
   const liftTypes = Array.from(new Set(liftData.map((lift) => lift.name)));
@@ -123,11 +122,11 @@ export default function Home() {
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="w-1/2 sm:w-2/3 md:w-auto flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+      <main className="w-full sm:w-5/6 md:w-2/3 flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <h1 className="text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">
-          logbook
+          chart
         </h1>
-
+        
         <AuthModal open={open} onClose={() => setOpen(false)} />
 
         {session && (
@@ -150,26 +149,14 @@ export default function Home() {
             {loading ? (
               <p className="text-gray-500">Loading chart...</p>
             ) : filteredData.length > 0 ? (
-              <>
-                <Table
-                  data={filteredData}
-                  onEdit={(lift) => {
-                    setEditingLift(lift);
-                    setLiftName(lift.name);
-                    setWeight(String(lift.weight));
-                    setReps(String(lift.reps));
-                    setIsModalOpen(true);
-                  }}
-                  onDelete={(id) => handleDeleteLift(id)}
-                />
-              </>
+              <Chart data={filteredData} />
             ) : (
               <p className="text-gray-400 mt-4">no data for selected filters</p>
             )}
 
             {isModalOpen && (
               <Modal open={isModalOpen} onClose={handleCloseModal}>
-                <h2 className="text-2xl font-semibold mb-4">{editingLift ? 'Edit' : 'Add'} a Lift</h2>
+                <h2 className="text-2xl font-semibold mb-4">Add a Lift</h2>
                 <Input dark placeholder="Lift Name" value={liftName} onChange={(e) => setLiftName(e.target.value)} />
                 <Input dark placeholder="Weight" type="number" value={weight} onChange={(e) => setWeight(e.target.value)} />
                 <Input dark placeholder="Reps" type="number" value={reps} onChange={(e) => setReps(e.target.value)} />
@@ -218,6 +205,7 @@ export default function Home() {
           </>
         )}
       </main>
+
     </div>
   );
 }

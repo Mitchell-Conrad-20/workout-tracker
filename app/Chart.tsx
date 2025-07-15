@@ -39,8 +39,13 @@ const Chart: React.FC<ChartProps> = ({ data }) => {
   const liftNames = Array.from(new Set(data.map(lift => lift.name)));
 
   // 3. Build a unified data array: each entry is a date, with each lift's metric as a key
-  const unifiedData = allDates.map(date => {
-    const entry: Record<string, any> = { date };
+  type UnifiedData = {
+    date: string;
+    [key: string]: string | number | null;
+  };
+
+  const unifiedData: UnifiedData[] = allDates.map(date => {
+    const entry: UnifiedData = { date };
     liftNames.forEach(name => {
       const lift = data.find(l => l.name === name && l.date === date);
       if (lift) {

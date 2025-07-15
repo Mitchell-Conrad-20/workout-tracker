@@ -64,6 +64,14 @@ export default function HamburgerMenu() {
             Logbook
           </Link>
 
+          <Link
+            href="/chart"
+            onClick={() => setIsOpen(false)}
+            className="transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
+          >
+            Chart
+          </Link>
+
           <div className="mt-2 border-t border-gray-300 dark:border-white/[.1] pt-3">
             {session ? (
               <Button dark onClick={handleLogout}>Log Out</Button>
