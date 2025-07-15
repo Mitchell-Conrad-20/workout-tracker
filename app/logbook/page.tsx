@@ -8,6 +8,7 @@ import Modal from '../Modal';
 // import Chart from '../Chart';
 import Table from '../Table';
 import AuthModal from '../AuthModal';
+import Toggle from '../Toggle';
 import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { Session } from '@supabase/supabase-js';
@@ -33,6 +34,8 @@ export default function Home() {
   const [liftData, setLiftData] = useState<Lift[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedLifts, setSelectedLifts] = useState<string[]>([]);
+
+  const [ascending, setAscending] = useState(false); // false = newest first
 
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<[string, string]>(["", ""]);
@@ -66,11 +69,11 @@ export default function Home() {
       .from('lifts')
       .select('id, name, weight, reps, date')
       .eq('user_id', session.user.id)
-      .order('date', { ascending: true });
+      .order('date', { ascending }); // dynamic ordering based on toggle
 
     if (!error && data) setLiftData(data as Lift[]);
     setLoading(false);
-  }, [session]);
+  }, [session, ascending]); // refetch when session or toggle changes
 
   useEffect(() => {
     fetchLifts();
@@ -85,7 +88,8 @@ export default function Home() {
       name: liftName,
       weight: Number(weight),
       reps: Number(reps),
-      date: new Date().toISOString().split('T')[0],
+      // date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-US'),
     };
 
     const { error } = editingLift
@@ -140,6 +144,13 @@ export default function Home() {
                 filter lifts
               </Button>
             </div>
+
+            <Toggle
+              options={['Newest First', 'Oldest First']}
+              selected={ascending ? 'Oldest First' : 'Newest First'}
+              onSelect={(val) => setAscending(val === 'Oldest First')}
+            />
+
 
             {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
               <Button onClick={handleClearFilters} className="text-sm">

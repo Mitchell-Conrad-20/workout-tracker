@@ -83,7 +83,8 @@ export default function Home() {
         name: liftName,
         weight: Number(weight),
         reps: Number(reps),
-        date: new Date().toISOString().split('T')[0],
+        // date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('en-US'),
       },
     ]);
 
