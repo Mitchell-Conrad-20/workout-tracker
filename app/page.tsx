@@ -7,24 +7,15 @@ import icon from '../public/icon.png';
 import Button from './Button';
 import Input from './Input';
 import Modal from './Modal';
-import Chart from './Chart';
 import AuthModal from './AuthModal';
 import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { Session } from '@supabase/supabase-js';
 
-type Lift = {
-  name: string;
-  weight: number;
-  reps: number;
-  date: string;
-};
-
 export default function Home() {
   const { open, setOpen } = useAuthModal();
   const [session, setSession] = useState<Session | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [liftData, setLiftData] = useState<Lift[]>([]);
 
   const [liftName, setLiftName] = useState('');
   const [weight, setWeight] = useState('');
@@ -65,14 +56,6 @@ export default function Home() {
       console.error('Error adding lift:', error.message);
       return;
     }
-
-    const { data, error: fetchError } = await supabase
-      .from('lifts')
-      .select('name, weight, reps, date')
-      .eq('user_id', userId)
-      .order('date', { ascending: true });
-
-    if (!fetchError && data) setLiftData(data as Lift[]);
 
     setLiftName('');
     setWeight('');
