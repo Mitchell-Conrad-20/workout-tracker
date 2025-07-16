@@ -79,7 +79,8 @@ export default function Home() {
     fetchLifts();
   }, [fetchLifts]);
 
-  const handleAddLift = async () => {
+  const handleAddLift = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault(); // Prevent default form submission
     if (!session) return;
 
     const userId = session.user.id;
@@ -180,11 +181,13 @@ export default function Home() {
 
             {isModalOpen && (
               <Modal open={isModalOpen} onClose={handleCloseModal}>
-                <h2 className="text-2xl font-semibold mb-4">{editingLift ? 'Edit' : 'Add'} a Lift</h2>
-                <Input dark placeholder="Lift Name" value={liftName} onChange={(e) => setLiftName(e.target.value)} />
-                <Input dark placeholder="Weight" type="number" value={weight} onChange={(e) => setWeight(e.target.value)} />
-                <Input dark placeholder="Reps" type="number" value={reps} onChange={(e) => setReps(e.target.value)} />
-                <Button dark onClick={handleAddLift}>Done</Button>
+                <form onSubmit={handleAddLift} className='flex flex-col gap-4'>
+                  <h2 className="text-2xl font-semibold mb-4">Add a Lift</h2>
+                  <Input dark placeholder="Lift Name" value={liftName} onChange={(e) => setLiftName(e.target.value)} />
+                  <Input dark placeholder="Weight" type="number" value={weight} onChange={(e) => setWeight(e.target.value)} />
+                  <Input dark placeholder="Reps" type="number" value={reps} onChange={(e) => setReps(e.target.value)} />
+                  <Button dark type="submit">Done</Button>
+                </form>
               </Modal>
             )}
 

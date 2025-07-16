@@ -18,9 +18,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault(); // Prevent default form submission
     setLoading(true);
     setError(null);
+
     try {
       const result = mode === 'login'
         ? await supabase.auth.signInWithPassword({ email, password })
@@ -46,7 +48,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
         {mode === 'login' ? 'Log In' : 'Sign Up'}
       </h2>
 
-      <div className="flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <Input
           dark
           placeholder="Email"
@@ -64,11 +66,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
 
         {error && <div className="text-sm text-red-500">{error}</div>}
 
-        <Button dark disabled={loading} onClick={handleSubmit}>
+        <Button type="submit" dark disabled={loading}>
           {loading ? 'Loading...' : mode === 'login' ? 'Log In' : 'Sign Up'}
         </Button>
 
         <button
+          type="button"
           className="text-sm text-blue-500 hover:underline"
           onClick={() =>
             setMode((prev) => (prev === 'login' ? 'signup' : 'login'))
@@ -78,7 +81,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
             ? "Don't have an account? Sign up"
             : 'Already have an account? Log in'}
         </button>
-      </div>
+      </form>
     </Modal>
   );
 };
