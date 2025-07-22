@@ -34,7 +34,8 @@ const LiftForm: React.FC<LiftFormProps> = ({
     }
   }, [initialData]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!name || !weight || !reps || !date) return;
 
     const payload: Partial<Lift> = {
@@ -49,7 +50,10 @@ const LiftForm: React.FC<LiftFormProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <form
+      className="flex flex-col gap-3"
+      onSubmit={handleSubmit}
+    >
       <Input
         dark
         placeholder="Lift Name"
@@ -76,12 +80,14 @@ const LiftForm: React.FC<LiftFormProps> = ({
       />
 
       <div className="flex justify-end gap-2 mt-2">
-        <Button onClick={onCancel}>Cancel</Button>
-        <Button dark onClick={handleSubmit}>
+        <Button type="button" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button dark type="submit">
           Save
         </Button>
       </div>
-    </div>
+    </form>
   );
 };
 
