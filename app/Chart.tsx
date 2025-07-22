@@ -1,17 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from 'recharts';
-import Toggle from './Toggle';
-
-// type Lift = {
-//   name: string;
-//   weight: number;
-//   reps: number;
-//   date: string;
-// };
 
 type ChartProps = {
   data: {
@@ -20,11 +18,62 @@ type ChartProps = {
     reps: number;
     date: string;
   }[];
+  defaultMetric: 'weight' | 'reps' | 'volume';
 };
 
-const Chart: React.FC<ChartProps> = ({ data }) => {
+const Chart: React.FC<ChartProps> = ({ data, defaultMetric }) => {
   const [mounted, setMounted] = useState(false);
-  const [metric, setMetric] = useState<'weight' | 'reps' | 'volume'>('weight');
+
+  // Run all hooks regardless of mounted state
+  const allDates = useMemo(
+    () => Array.from(new Set(data.map((lift) => lift.date))).sort(),
+    [data]
+  );
+
+  const liftNames = useMemo(
+    () => Array.from(new Set(data.map((lift) => lift.name))),
+    [data]
+  );
+
+  type UnifiedData = {
+    date: string;
+    [key: string]: string | number | null;
+  };
+
+  const unifiedData: UnifiedData[] = useMemo(() => {
+    return allDates.map((date) => {
+      const entry: UnifiedData = { date };
+
+      liftNames.forEach((name) => {
+        const liftsForNameAndDate = data.filter(
+          (l) => l.name === name && l.date === date
+        );
+
+        if (liftsForNameAndDate.length > 0) {
+          const maxWeightSet = liftsForNameAndDate.reduce((prev, curr) =>
+            curr.weight > prev.weight ? curr : prev
+          );
+
+          const maxWeight = maxWeightSet.weight;
+          const repsAtMaxWeight = maxWeightSet.reps;
+          const totalVolume = liftsForNameAndDate.reduce(
+            (sum, l) => sum + l.weight * l.reps,
+            0
+          );
+
+          entry[`${name}_weight`] = maxWeight;
+          entry[`${name}_reps`] = repsAtMaxWeight;
+          entry[`${name}_volume`] = totalVolume;
+        } else {
+          entry[`${name}_weight`] = null;
+          entry[`${name}_reps`] = null;
+          entry[`${name}_volume`] = null;
+        }
+      });
+
+      return entry;
+    });
+  }, [data, allDates, liftNames]);
 
   useEffect(() => {
     setMounted(true);
@@ -32,42 +81,8 @@ const Chart: React.FC<ChartProps> = ({ data }) => {
 
   if (!mounted) return null;
 
-
-  // 1. Get all unique dates, sorted
-  const allDates = Array.from(new Set(data.map(lift => lift.date))).sort();
-  // 2. Get all unique lift names
-  const liftNames = Array.from(new Set(data.map(lift => lift.name)));
-
-  // 3. Build a unified data array: each entry is a date, with each lift's metric as a key
-  type UnifiedData = {
-    date: string;
-    [key: string]: string | number | null;
-  };
-
-  const unifiedData: UnifiedData[] = allDates.map(date => {
-    const entry: UnifiedData = { date };
-    liftNames.forEach(name => {
-      const lift = data.find(l => l.name === name && l.date === date);
-      if (lift) {
-        entry[`${name}_weight`] = lift.weight;
-        entry[`${name}_reps`] = lift.reps;
-        entry[`${name}_volume`] = lift.weight * lift.reps;
-      } else {
-        entry[`${name}_weight`] = null;
-        entry[`${name}_reps`] = null;
-        entry[`${name}_volume`] = null;
-      }
-    });
-    return entry;
-  });
-
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4">
-      <Toggle
-        options={['weight', 'reps', 'volume']}
-        selected={metric}
-        onSelect={(val) => setMetric(val as typeof metric)}
-      />
       <div className="h-[400px] w-full">
         <ResponsiveContainer width="99%" height="100%">
           <LineChart data={unifiedData}>
@@ -88,7 +103,7 @@ const Chart: React.FC<ChartProps> = ({ data }) => {
               <Line
                 key={name}
                 type="monotone"
-                dataKey={`${name}_${metric}`}
+                dataKey={`${name}_${defaultMetric}`}
                 name={name}
                 stroke={`hsl(${(idx * 137.5) % 360}, 70%, 50%)`}
                 dot={{ r: 4 }}

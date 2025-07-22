@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Button from '../Button';
 import Modal from '../Modal';
 import Chart from '../Chart';
+import Toggle from '../Toggle';
 import AuthModal from '../AuthModal';
 import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
@@ -19,9 +20,11 @@ export default function Home() {
   const [liftData, setLiftData] = useState<Lift[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedLifts, setSelectedLifts] = useState<string[]>([]);
-
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [dateRange, setDateRange] = useState<[string, string]>(["", ""]);
+  const [dateRange, setDateRange] = useState<[string, string]>(['', '']);
+
+  // NEW: Metric state
+  const [metric, setMetric] = useState<'weight' | 'reps' | 'volume'>('weight');
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
@@ -99,7 +102,7 @@ export default function Home() {
 
   const handleClearFilters = () => {
     setSelectedLifts([]);
-    setDateRange(["", ""]);
+    setDateRange(['', '']);
   };
 
   return (
@@ -138,7 +141,15 @@ export default function Home() {
             {loading ? (
               <p className="text-gray-500">Loading chart...</p>
             ) : filteredData.length > 0 ? (
-              <Chart data={filteredData} />
+              <>
+                {/* Global metric toggle */}
+                <Toggle
+                  options={['weight', 'reps', 'volume']}
+                  selected={metric}
+                  onSelect={(val) => setMetric(val as typeof metric)}
+                />
+                <Chart data={filteredData} defaultMetric={metric} />
+              </>
             ) : (
               <p className="text-gray-400 mt-4">no data for selected filters</p>
             )}
@@ -203,10 +214,7 @@ export default function Home() {
                   <Button onClick={() => setIsFilterModalOpen(false)}>
                     Cancel
                   </Button>
-                  <Button
-                    dark
-                    onClick={() => setIsFilterModalOpen(false)}
-                  >
+                  <Button dark onClick={() => setIsFilterModalOpen(false)}>
                     Apply
                   </Button>
                 </div>
