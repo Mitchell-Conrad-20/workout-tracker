@@ -35,7 +35,7 @@ export default function HamburgerMenu() {
     <div className="fixed top-4 right-4 z-50">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-foreground text-background p-2 rounded-full transition duration-200 hover:scale-105"
+        className="cursor-pointer bg-foreground text-background p-2 rounded-full transition duration-200 hover:scale-105"
       >
         {isOpen ? <X size={22} /> : <Menu size={22} />}
       </button>

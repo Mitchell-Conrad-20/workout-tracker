@@ -167,7 +167,7 @@ const Logbook: React.FC = () => {
         <button
           onClick={() => prevDate && setSelectedDate(prevDate)}
           disabled={!prevDate}
-          className={`w-13 sm:w-14 h-10 sm:h-12 flex items-center justify-center rounded-full transition-colors ${
+          className={`w-12 h-10 flex items-center justify-center rounded-full transition-colors ${
             prevDate
               ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
               : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
@@ -178,11 +178,12 @@ const Logbook: React.FC = () => {
         <DatePicker
           value={selectedDate || ''}
           onChange={(date) => handleDateSelect(date ? new Date(date) : null)}
+          small
         />
         <button
           onClick={() => nextDate && setSelectedDate(nextDate)}
           disabled={!nextDate}
-          className={`w-13 sm:w-14 h-10 sm:h-12 flex items-center justify-center rounded-full text-lg transition-colors ${
+          className={`w-12 h-10 flex items-center justify-center rounded-full text-lg transition-colors ${
             nextDate
               ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
               : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
@@ -214,13 +215,13 @@ const Logbook: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleEdit(lift)}
-                    className="text-blue-600 hover:underline"
+                    className="cursor-pointer text-blue-600 hover:underline"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(lift.id)}
-                    className="text-red-600 hover:underline"
+                    className="cursor-pointer text-red-600 hover:underline"
                   >
                     Delete
                   </button>

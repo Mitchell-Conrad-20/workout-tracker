@@ -2,18 +2,20 @@ import React from 'react';
 
 
 interface DatePickerProps {
-  value: string;
-  onChange: (date: string) => void;
+    value: string;
+    onChange: (date: string) => void;
+    small?: boolean; // Optional prop to control size
 }
 
-const DatePicker: React.FC<DatePickerProps> = ({ value, onChange }) => {
+const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, small=false }) => {
   return (
     <div className="relative w-full">
       <input
         type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="customDatePicker w-full py-2 pl-4 border rounded-full dark:border-neutral-700 bg-white dark:bg-neutral-900 text-black dark:text-white h-10 sm:h-12"
+        className={small ? 'customDatePicker w-full py-2 pl-4 border rounded-full dark:border-neutral-700 bg-white dark:bg-neutral-900 text-black dark:text-white h-10' 
+            : "customDatePicker w-full py-2 pl-4 border rounded-full dark:border-neutral-700 bg-white dark:bg-neutral-900 text-black dark:text-white h-10 sm:h-12"}
       />
       {/* Custom icon */}
       <svg
