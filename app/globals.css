@@ -24,3 +24,51 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Change cursor style for date picker */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+/* Change color of date picker button */
+/* @media (prefers-color-scheme: dark) {
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1);
+  }
+} */
+
+/* Hide the default calendar icon */
+input[type="date"].customDatePicker::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Make the input have extra right padding for the icon */
+input[type="date"].customDatePicker {
+  position: relative;
+  padding-right: 2.5rem;
+}
+
+/* Remove date picker... user clicks on date instead */
+/* input[type="date"]::-webkit-calendar-picker-indicator {
+  background: transparent;
+  bottom: 0;
+  color: transparent;
+  cursor: pointer;
+  height: auto;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: auto;
+}
+
+input[type='date'] {
+  display: inline-block;
+  position: relative;
+} */

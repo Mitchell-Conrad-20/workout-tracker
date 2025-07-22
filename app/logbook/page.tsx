@@ -1,237 +1,256 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-// import icon from '../public/icon.png';
-import Button from '../Button';
-import Input from '../Input';
+import React, { useEffect, useState, useMemo } from 'react';
+import supabase from '../../lib/supabase';
+// import Button from '../Button';
 import Modal from '../Modal';
-// import Chart from '../Chart';
-import Table from '../Table';
-import AuthModal from '../AuthModal';
-import Toggle from '../Toggle';
-import supabase from '@/lib/supabase';
-import { useAuthModal } from '@/hooks/useAuthModal';
-import { Session } from '@supabase/supabase-js';
+import LiftForm from '../LiftForm';
+import DatePicker from '../DatePicker';
+import { format, parseISO } from 'date-fns';
+import { ArrowRight, ArrowLeft} from 'lucide-react';
 
-type Lift = {
+interface Lift {
   id: number;
-  user_id?: string;
+  user_id: string;
   name: string;
   weight: number;
   reps: number;
   date: string;
-};
+}
 
-export default function Home() {
-  const { open, setOpen } = useAuthModal();
-  const [session, setSession] = useState<Session | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const [liftName, setLiftName] = useState('');
-  const [weight, setWeight] = useState('');
-  const [reps, setReps] = useState('');
-
-  const [liftData, setLiftData] = useState<Lift[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedLifts, setSelectedLifts] = useState<string[]>([]);
-
-  const [ascending, setAscending] = useState(false); // false = newest first
-
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [dateRange, setDateRange] = useState<[string, string]>(["", ""]);
+const Logbook: React.FC = () => {
+  const [lifts, setLifts] = useState<Lift[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingLift, setEditingLift] = useState<Lift | null>(null);
-
-  const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingLift(null);
-  };
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-    });
+    const fetchLifts = async () => {
+      const { data, error } = await supabase
+        .from('lifts')
+        .select('*')
+        .order('date', { ascending: false });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+      if (!error && data) {
+        setLifts(data);
 
-    return () => {
-      listener.subscription.unsubscribe();
+        // Default to latest date
+        const latest = data[0]?.date?.split('T')[0];
+        if (latest) setSelectedDate(latest);
+      } else {
+        console.error(error);
+      }
     };
+
+    fetchLifts();
   }, []);
 
-  const fetchLifts = useCallback(async () => {
-    if (!session?.user) return;
-    setLoading(true);
+  const groupedLifts = useMemo(
+    () =>
+      lifts.reduce<Record<string, Lift[]>>((acc, lift) => {
+        const dateKey = lift.date.split('T')[0];
+        acc[dateKey] = acc[dateKey] || [];
+        acc[dateKey].push(lift);
+        return acc;
+      }, {}),
+    [lifts]
+  );
 
-    const { data, error } = await supabase
-      .from('lifts')
-      .select('id, name, weight, reps, date')
-      .eq('user_id', session.user.id)
-      .order('date', { ascending }); // dynamic ordering based on toggle
+  const dates = useMemo(() => Object.keys(groupedLifts).sort((a, b) => b.localeCompare(a)), [groupedLifts]);
 
-    if (!error && data) setLiftData(data as Lift[]);
-    setLoading(false);
-  }, [session, ascending]); // refetch when session or toggle changes
+  const handleEdit = (lift: Lift) => {
+    setEditingLift(lift);
+    setShowModal(true);
+  };
 
-  useEffect(() => {
-    fetchLifts();
-  }, [fetchLifts]);
+  const handleDelete = async (id: number) => {
+    await supabase.from('lifts').delete().eq('id', id);
+    setLifts((prev) => prev.filter((lift) => lift.id !== id));
+  };
 
-  const handleAddLift = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault(); // Prevent default form submission
-    if (!session) return;
+  const handleFormSubmit = async (updatedLift: Partial<Lift>) => {
+    try {
+      if (updatedLift.id) {
+        // Editing existing lift
+        const { data, error } = await supabase
+          .from('lifts')
+          .update({
+            name: updatedLift.name,
+            weight: updatedLift.weight,
+            reps: updatedLift.reps,
+            date: updatedLift.date,
+          })
+          .eq('id', updatedLift.id)
+          .select();
 
-    const userId = session.user.id;
-    const payload = {
-      user_id: userId,
-      name: liftName,
-      weight: Number(weight),
-      reps: Number(reps),
-      // date: new Date().toISOString().split('T')[0],
-      date: new Date().toLocaleDateString('en-US'),
-    };
+        if (error) {
+          console.error('Error updating lift:', error.message);
+          return;
+        }
 
-    const { error } = editingLift
-      ? await supabase.from('lifts').update(payload).eq('id', editingLift.id)
-      : await supabase.from('lifts').insert([payload]);
+        if (data) {
+          setLifts((prev) =>
+            prev.map((lift) => (lift.id === updatedLift.id ? data[0] : lift))
+          );
+        }
+      } else {
+        // Creating new lift (must include user_id)
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-    if (!error) {
-      fetchLifts();
-      setLiftName('');
-      setWeight('');
-      setReps('');
+        if (userError || !user) {
+          console.error('Error fetching user:', userError?.message);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('lifts')
+          .insert([{
+            name: updatedLift.name,
+            weight: updatedLift.weight,
+            reps: updatedLift.reps,
+            date: updatedLift.date,
+            user_id: user.id,
+          }])
+          .select();
+
+        if (error) {
+          console.error('Error adding new lift:', error.message);
+          return;
+        }
+
+        if (data) {
+          setLifts((prev) => [...prev, ...data]);
+        }
+      }
+
+      setShowModal(false);
       setEditingLift(null);
-      handleCloseModal();
+    } catch (err) {
+      console.error('Unexpected error in handleFormSubmit:', err);
     }
   };
 
-  const handleDeleteLift = async (id: number) => {
-    const { error } = await supabase.from('lifts').delete().eq('id', id);
-    if (!error) fetchLifts();
+  const handleDateSelect = (date: Date | null) => {
+    if (!date) return;
+    const isoDate = date.toISOString().split('T')[0];
+    setSelectedDate(isoDate);
   };
 
-  const liftTypes = Array.from(new Set(liftData.map((lift) => lift.name)));
-
-  const filteredData = liftData.filter((lift) => {
-    const isTypeSelected = selectedLifts.length === 0 || selectedLifts.includes(lift.name);
-    const isInDateRange =
-      (!dateRange[0] || lift.date >= dateRange[0]) && (!dateRange[1] || lift.date <= dateRange[1]);
-    return isTypeSelected && isInDateRange;
-  });
-
-  const handleClearFilters = () => {
-    setSelectedLifts([]);
-    setDateRange(["", ""]);
+  const openNewLiftForm = () => {
+    setEditingLift(null);
+    setShowModal(true);
   };
+
+  const currentIndex = selectedDate ? dates.indexOf(selectedDate) : -1;
+  const prevDate = currentIndex > 0 ? dates[currentIndex - 1] : null;
+  const nextDate = currentIndex >= 0 && currentIndex < dates.length - 1 ? dates[currentIndex + 1] : null;
+
+  const currentLifts = selectedDate ? groupedLifts[selectedDate] || [] : [];
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="w-1/2 sm:w-2/3 md:w-auto flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <h1 className="text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">
-          logbook
-        </h1>
+    <div className="p-4 max-w-3xl mx-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Your Logbook</h1>
+        <button
+          onClick={openNewLiftForm} 
+          className="mr-15 md:mr-0 p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+        >
+          +
+        </button>
+      </div>
 
-        <AuthModal open={open} onClose={() => setOpen(false)} />
+      {/* Calendar-style date picker with arrows */}
+      <div className="flex items-center justify-center gap-3 mb-6">
+        <button
+          onClick={() => prevDate && setSelectedDate(prevDate)}
+          disabled={!prevDate}
+          className={`w-12 h-10 flex items-center justify-center rounded-full transition-colors ${
+            prevDate
+              ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
+              : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
+          }`}
+        >
+          <ArrowLeft />
+        </button>
+        <DatePicker
+          value={selectedDate || ''}
+          onChange={(date) => handleDateSelect(date ? new Date(date) : null)}
+          small
+        />
+        <button
+          onClick={() => nextDate && setSelectedDate(nextDate)}
+          disabled={!nextDate}
+          className={`w-12 h-10 flex items-center justify-center rounded-full text-lg transition-colors ${
+            nextDate
+              ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
+              : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
+          }`}
+        >
+          <ArrowRight />
+        </button>
 
-        {session && (
-          <>
-            <div className="flex flex-col md:flex-row gap-2 w-full">
-              <Button dark onClick={handleOpenModal} className="w-full md:w-auto">
-                add a lift
-              </Button>
-              <Button dark onClick={() => setIsFilterModalOpen(true)} className="w-full md:w-auto">
-                filter lifts
-              </Button>
+      </div>
+
+      {/* Display "page" */}
+      {selectedDate && currentLifts.length > 0 ? (
+        <div className="bg-white dark:bg-neutral-900 p-4 rounded shadow">
+          <h2 className="text-xl font-semibold mb-4">
+            {format(parseISO(selectedDate), 'MMMM d, yyyy')}
+          </h2>
+          {currentLifts.map((lift) => (
+            <div
+              key={lift.id}
+              className="mb-4 p-3 border rounded dark:border-neutral-700"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-medium">{lift.name}</p>
+                  <p>
+                    {lift.weight} lbs × {lift.reps} reps
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(lift)}
+                    className="cursor-pointer text-blue-600 hover:underline"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(lift.id)}
+                    className="cursor-pointer text-red-600 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-neutral-500">
+          {selectedDate
+            ? 'No lifts recorded on this date.'
+            : 'Select a date to view your lifts.'}
+        </div>
+      )}
 
-            <Toggle
-              options={['Newest First', 'Oldest First']}
-              selected={ascending ? 'Oldest First' : 'Newest First'}
-              onSelect={(val) => setAscending(val === 'Oldest First')}
-            />
-
-
-            {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
-              <Button onClick={handleClearFilters} className="text-sm">
-                clear filters
-              </Button>
-            )}
-
-            {loading ? (
-              <p className="text-gray-500">Loading chart...</p>
-            ) : filteredData.length > 0 ? (
-              <>
-                <Table
-                  data={filteredData}
-                  onEdit={(lift) => {
-                    setEditingLift(lift);
-                    setLiftName(lift.name);
-                    setWeight(String(lift.weight));
-                    setReps(String(lift.reps));
-                    setIsModalOpen(true);
-                  }}
-                  onDelete={(id) => handleDeleteLift(id)}
-                />
-              </>
-            ) : (
-              <p className="text-gray-400 mt-4">no data for selected filters</p>
-            )}
-
-            {isModalOpen && (
-              <Modal open={isModalOpen} onClose={handleCloseModal}>
-                <form onSubmit={handleAddLift} className='flex flex-col gap-4'>
-                  <h2 className="text-2xl font-semibold mb-4">Add a Lift</h2>
-                  <Input dark placeholder="Lift Name" value={liftName} onChange={(e) => setLiftName(e.target.value)} />
-                  <Input dark placeholder="Weight" type="number" value={weight} onChange={(e) => setWeight(e.target.value)} />
-                  <Input dark placeholder="Reps" type="number" value={reps} onChange={(e) => setReps(e.target.value)} />
-                  <Button dark type="submit">Done</Button>
-                </form>
-              </Modal>
-            )}
-
-            {isFilterModalOpen && (
-              <Modal open={isFilterModalOpen} onClose={() => setIsFilterModalOpen(false)}>
-                <h2 className="text-xl font-semibold mb-4">Filter Lifts</h2>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {liftTypes.map((type) => (
-                    <Button
-                      key={type}
-                      onClick={() => setSelectedLifts((prev) =>
-                        prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-                      )}
-                      dark={selectedLifts.includes(type)}
-                    >
-                      {type}
-                    </Button>
-                  ))}
-                </div>
-
-                <div className="flex flex-col gap-2 mb-6">
-                  <label className="text-sm font-medium">Start Date</label>
-                  <Input
-                    type="date"
-                    value={dateRange[0]}
-                    onChange={(e) => setDateRange([e.target.value, dateRange[1]])}
-                  />
-                  <label className="text-sm font-medium">End Date</label>
-                  <Input
-                    type="date"
-                    value={dateRange[1]}
-                    onChange={(e) => setDateRange([dateRange[0], e.target.value])}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-4">
-                  <Button onClick={() => setIsFilterModalOpen(false)}>Cancel</Button>
-                  <Button dark onClick={() => setIsFilterModalOpen(false)}>Apply</Button>
-                </div>
-              </Modal>
-            )}
-          </>
-        )}
-      </main>
+      {/* Add/Edit Modal */}
+      <Modal open={showModal} onClose={() => setShowModal(false)}>
+        <h2 className="text-lg font-semibold mb-4">
+          {editingLift ? 'Edit Lift' : 'Add Lift'}
+        </h2>
+        <LiftForm
+          initialData={editingLift}
+          onSubmit={handleFormSubmit}
+          onCancel={() => setShowModal(false)}
+        />
+      </Modal>
     </div>
   );
-}
+};
+
+export default Logbook;

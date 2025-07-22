@@ -3,26 +3,21 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import icon from '../public/icon.png';
-// import iconWhite from '../public/icon-white.png';
 import Button from './Button';
-import Input from './Input';
 import Modal from './Modal';
 import AuthModal from './AuthModal';
+import LiftForm from './LiftForm';
 import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { Session } from '@supabase/supabase-js';
+import { Lift } from './types/lift';
 
 export default function Home() {
   const { open, setOpen } = useAuthModal();
   const [session, setSession] = useState<Session | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [liftName, setLiftName] = useState('');
-  const [weight, setWeight] = useState('');
-  const [reps, setReps] = useState('');
-
-  const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
+  const [editingLift, setEditingLift] = useState<Lift | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -38,31 +33,31 @@ export default function Home() {
     };
   }, []);
 
-  const handleAddLift = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault(); // Prevent default form submission
+  const handleFormSubmit = async (liftData: Partial<Lift>) => {
     if (!session) return;
+    try {
+      const { data, error } = await supabase
+        .from('lifts')
+        .insert([{
+          user_id: session.user.id,
+          name: liftData.name,
+          weight: liftData.weight,
+          reps: liftData.reps,
+          date: liftData.date || new Date().toISOString().split('T')[0], // default to today
+        }])
+        .select();
 
-    const userId = session.user.id;
-    const { error } = await supabase.from('lifts').insert([
-      {
-        user_id: userId,
-        name: liftName,
-        weight: Number(weight),
-        reps: Number(reps),
-        // date: new Date().toISOString().split('T')[0],
-        date: new Date().toLocaleDateString('en-US'),
-      },
-    ]);
+      if (error) {
+        console.error('Error adding lift:', error.message);
+        return;
+      }
 
-    if (error) {
-      console.error('Error adding lift:', error.message);
-      return;
+      console.log('Lift added:', data);
+      setIsModalOpen(false);
+      setEditingLift(null);
+    } catch (err) {
+      console.error('Unexpected error in handleFormSubmit:', err);
     }
-
-    setLiftName('');
-    setWeight('');
-    setReps('');
-    handleCloseModal();
   };
 
   return (
@@ -85,22 +80,23 @@ export default function Home() {
         ) : (
           <>
             <div className="flex flex-col md:flex-row gap-2 w-full">
-              <Button dark onClick={handleOpenModal} className="w-full md:w-auto">
-                add a lift
-              </Button>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="mr-15 md:mr-0 p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+              >
+                +
+              </button>
             </div>
 
-            {isModalOpen && (
-              <Modal open={isModalOpen} onClose={handleCloseModal}>
-                <form onSubmit={handleAddLift} className='flex flex-col gap-4'>
-                  <h2 className="text-2xl font-semibold mb-4">Add a Lift</h2>
-                  <Input dark placeholder="Lift Name" value={liftName} onChange={(e) => setLiftName(e.target.value)} />
-                  <Input dark placeholder="Weight" type="number" value={weight} onChange={(e) => setWeight(e.target.value)} />
-                  <Input dark placeholder="Reps" type="number" value={reps} onChange={(e) => setReps(e.target.value)} />
-                  <Button dark type="submit">Done</Button>
-                </form>
-              </Modal>
-            )}
+            {/* Add Lift Modal */}
+            <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+              <h2 className="text-lg font-semibold mb-4">Add Lift</h2>
+              <LiftForm
+                initialData={editingLift}
+                onSubmit={handleFormSubmit}
+                onCancel={() => setIsModalOpen(false)}
+              />
+            </Modal>
           </>
         )}
       </main>
