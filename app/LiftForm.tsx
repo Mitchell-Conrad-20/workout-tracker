@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Input from './Input';
 import Button from './Button';
+import DatePicker from './DatePicker';
 import { Lift } from './types/lift';
 
 type LiftFormProps = {
@@ -69,12 +70,9 @@ const LiftForm: React.FC<LiftFormProps> = ({
         value={reps}
         onChange={(e) => setReps(e.target.value)}
       />
-      <Input
-        dark
-        placeholder="Date"
-        type="date"
+      <DatePicker
         value={date}
-        onChange={(e) => setDate(e.target.value)}
+        onChange={(newDate) => setDate(newDate)}
       />
 
       <div className="flex justify-end gap-2 mt-2">

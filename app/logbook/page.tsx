@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import supabase from '../../lib/supabase';
-import Button from '../Button';
+// import Button from '../Button';
 import Modal from '../Modal';
 import LiftForm from '../LiftForm';
+import DatePicker from '../DatePicker';
 import { format, parseISO } from 'date-fns';
+import { ArrowRight, ArrowLeft} from 'lucide-react';
 
 interface Lift {
   id: number;
@@ -43,12 +45,18 @@ const Logbook: React.FC = () => {
     fetchLifts();
   }, []);
 
-  const groupedLifts = lifts.reduce<Record<string, Lift[]>>((acc, lift) => {
-    const dateKey = lift.date.split('T')[0];
-    acc[dateKey] = acc[dateKey] || [];
-    acc[dateKey].push(lift);
-    return acc;
-  }, {});
+  const groupedLifts = useMemo(
+    () =>
+      lifts.reduce<Record<string, Lift[]>>((acc, lift) => {
+        const dateKey = lift.date.split('T')[0];
+        acc[dateKey] = acc[dateKey] || [];
+        acc[dateKey].push(lift);
+        return acc;
+      }, {}),
+    [lifts]
+  );
+
+  const dates = useMemo(() => Object.keys(groupedLifts).sort((a, b) => b.localeCompare(a)), [groupedLifts]);
 
   const handleEdit = (lift: Lift) => {
     setEditingLift(lift);
@@ -99,15 +107,13 @@ const Logbook: React.FC = () => {
 
         const { data, error } = await supabase
           .from('lifts')
-          .insert([
-            {
-              name: updatedLift.name,
-              weight: updatedLift.weight,
-              reps: updatedLift.reps,
-              date: updatedLift.date,
-              user_id: user.id,
-            },
-          ])
+          .insert([{
+            name: updatedLift.name,
+            weight: updatedLift.weight,
+            reps: updatedLift.reps,
+            date: updatedLift.date,
+            user_id: user.id,
+          }])
           .select();
 
         if (error) {
@@ -120,7 +126,6 @@ const Logbook: React.FC = () => {
         }
       }
 
-      // Reset modal and editing state
       setShowModal(false);
       setEditingLift(null);
     } catch (err) {
@@ -139,25 +144,53 @@ const Logbook: React.FC = () => {
     setShowModal(true);
   };
 
+  const currentIndex = selectedDate ? dates.indexOf(selectedDate) : -1;
+  const prevDate = currentIndex > 0 ? dates[currentIndex - 1] : null;
+  const nextDate = currentIndex >= 0 && currentIndex < dates.length - 1 ? dates[currentIndex + 1] : null;
+
   const currentLifts = selectedDate ? groupedLifts[selectedDate] || [] : [];
 
   return (
     <div className="p-4 max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Your Logbook</h1>
-        <Button dark onClick={openNewLiftForm}>
-          + Add Lift
-        </Button>
+        <button
+          onClick={openNewLiftForm} 
+          className="mr-15 md:mr-0 p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+        >
+          +
+        </button>
       </div>
 
-      {/* Calendar-style date picker */}
-      <div className="mb-6 border rounded-md dark:border-neutral-700 p-4 bg-white dark:bg-neutral-900">
-        <input
-          type="date"
+      {/* Calendar-style date picker with arrows */}
+      <div className="flex items-center justify-center gap-3 mb-6">
+        <button
+          onClick={() => prevDate && setSelectedDate(prevDate)}
+          disabled={!prevDate}
+          className={`w-13 sm:w-14 h-10 sm:h-12 flex items-center justify-center rounded-full transition-colors ${
+            prevDate
+              ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
+              : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
+          }`}
+        >
+          <ArrowLeft />
+        </button>
+        <DatePicker
           value={selectedDate || ''}
-          onChange={(e) => handleDateSelect(new Date(e.target.value))}
-          className="w-full p-2 border rounded-md dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          onChange={(date) => handleDateSelect(date ? new Date(date) : null)}
         />
+        <button
+          onClick={() => nextDate && setSelectedDate(nextDate)}
+          disabled={!nextDate}
+          className={`w-13 sm:w-14 h-10 sm:h-12 flex items-center justify-center rounded-full text-lg transition-colors ${
+            nextDate
+              ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
+              : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
+          }`}
+        >
+          <ArrowRight />
+        </button>
+
       </div>
 
       {/* Display "page" */}
