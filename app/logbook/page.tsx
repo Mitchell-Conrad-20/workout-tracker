@@ -150,6 +150,16 @@ const Logbook: React.FC = () => {
 
   const currentLifts = selectedDate ? groupedLifts[selectedDate] || [] : [];
 
+  // Group current lifts by exercise name
+  const groupedByExercise = useMemo(() => {
+    const grouped: Record<string, Lift[]> = {};
+    currentLifts.forEach((lift) => {
+      if (!grouped[lift.name]) grouped[lift.name] = [];
+      grouped[lift.name].push(lift);
+    });
+    return grouped;
+  }, [currentLifts]);
+
   return (
     <div className="p-4 max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-4">
@@ -165,10 +175,10 @@ const Logbook: React.FC = () => {
       {/* Calendar-style date picker with arrows */}
       <div className="flex items-center justify-center gap-3 mb-6">
         <button
-          onClick={() => prevDate && setSelectedDate(prevDate)}
-          disabled={!prevDate}
-          className={`w-12 h-10 flex items-center justify-center rounded-full transition-colors ${
-            prevDate
+          onClick={() => nextDate && setSelectedDate(nextDate)}
+          disabled={!nextDate}
+          className={`w-12 h-10 flex items-center justify-center rounded-full text-lg transition-colors ${
+            nextDate
               ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
               : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
           }`}
@@ -181,10 +191,10 @@ const Logbook: React.FC = () => {
           small
         />
         <button
-          onClick={() => nextDate && setSelectedDate(nextDate)}
-          disabled={!nextDate}
-          className={`w-12 h-10 flex items-center justify-center rounded-full text-lg transition-colors ${
-            nextDate
+          onClick={() => prevDate && setSelectedDate(prevDate)}
+          disabled={!prevDate}
+          className={`w-12 h-10 flex items-center justify-center rounded-full transition-colors ${
+            prevDate
               ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
               : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
           }`}
@@ -200,35 +210,46 @@ const Logbook: React.FC = () => {
           <h2 className="text-xl font-semibold mb-4">
             {format(parseISO(selectedDate), 'MMMM d, yyyy')}
           </h2>
-          {currentLifts.map((lift) => (
-            <div
-              key={lift.id}
-              className="mb-4 p-3 border rounded dark:border-neutral-700"
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium">{lift.name}</p>
-                  <p>
-                    {lift.weight} lbs × {lift.reps} reps
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(lift)}
-                    className="cursor-pointer text-blue-600 hover:underline"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(lift.id)}
-                    className="cursor-pointer text-red-600 hover:underline"
-                  >
-                    Delete
-                  </button>
+          {/* Display lifts in sorted groups of sorted data */}
+          {Object.entries(groupedByExercise)
+            .sort(([a], [b]) => a.localeCompare(b)) // Alphabetize exercises
+            .map(([exerciseName, sets]) => (
+              <div
+                key={exerciseName}
+                className="mb-4 p-3 border rounded dark:border-neutral-700"
+              >
+                <p className="font-medium mb-2">{exerciseName}</p>
+                <div className="space-y-1">
+                  {sets
+                    .slice() // Copy to avoid mutating state
+                    .sort((a, b) => b.weight - a.weight) // Heaviest first
+                    .map((set) => (
+                      <div
+                        key={set.id}
+                        className="flex justify-between items-center"
+                      >
+                        <p>
+                          {set.weight} lbs × {set.reps} reps
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(set)}
+                            className="cursor-pointer text-blue-600 hover:underline"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(set.id)}
+                            className="cursor-pointer text-red-600 hover:underline"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       ) : (
         <div className="text-neutral-500">
