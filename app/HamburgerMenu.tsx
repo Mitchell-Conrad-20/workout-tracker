@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import Button from './Button';
@@ -12,6 +12,7 @@ export default function HamburgerMenu() {
   const { setOpen } = useAuthModal();
   const [isOpen, setIsOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -25,6 +26,25 @@ export default function HamburgerMenu() {
     };
   }, []);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -32,7 +52,7 @@ export default function HamburgerMenu() {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className="fixed top-4 right-4 z-50" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="cursor-pointer bg-foreground text-background p-2 rounded-full transition duration-200 hover:scale-105"
