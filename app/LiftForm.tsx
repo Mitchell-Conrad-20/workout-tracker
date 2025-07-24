@@ -223,10 +223,10 @@ const LiftForm: React.FC<LiftFormProps> = ({
       <DatePicker value={date} onChange={(newDate) => setDate(newDate)} />
 
       <div className="flex justify-end gap-2 mt-2">
-        <Button type="button" onClick={onCancel}>
+        <Button dark type="button" onClick={onCancel}>
           Cancel
         </Button>
-        <Button dark type="submit">
+        <Button type="submit">
           Save
         </Button>
       </div>
