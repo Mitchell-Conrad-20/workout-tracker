@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Input from '../Input';
 import Button from '../Button';
 import Modal from '../Modal';
 import Chart from '../Chart';
@@ -162,23 +163,25 @@ export default function Home() {
   };
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="w-full sm:w-5/6 md:w-2/3 flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <h1 className="text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">
-          chart
-        </h1>
+    <div className="min-h-screen pt-4 pb-20 gap-16 sm:pb-20 font-[family-name:var(--font-geist-sans)] flex justify-center">
+      <main className="w-full sm:w-5/6 md:w-2/3 flex flex-col gap-[32px] items-center sm:items-start">
+        <div className="flex items-center justify-between w-full mb-2">
+          <h1 className="px-4 text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">Your Chart</h1>
+          {session && (
+            <button
+              onClick={handleOpenModal}
+              className="mr-15 md:mr-0 p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+            >
+              +
+            </button>
+          )}
+        </div>
 
         <AuthModal open={open} onClose={() => setOpen(false)} />
 
         {session && (
           <>
-            <div className="flex flex-col md:flex-row gap-2 w-full">
-              <button
-                onClick={handleOpenModal}
-                className="p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
-              >
-                +
-              </button>
+            <div className="px-4 flex flex-col md:flex-row gap-2 w-full">
               <Button
                 dark
                 onClick={() => setIsFilterModalOpen(true)}
@@ -186,26 +189,19 @@ export default function Home() {
               >
                 filter lifts
               </Button>
-            </div>
 
-            {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
-              <Button onClick={handleClearFilters} className="text-sm">
+              {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
+              <Button onClick={handleClearFilters} >
                 clear filters
               </Button>
             )}
 
+            </div>
+
             {loading ? (
               <p className="text-gray-500">Loading chart...</p>
             ) : filteredData.length > 0 ? (
-              <>
-                {/* Global metric toggle */}
-                <Toggle
-                  options={['weight', 'reps', 'volume']}
-                  selected={metric}
-                  onSelect={(val) => setMetric(val as typeof metric)}
-                />
-                <Chart data={filteredData} defaultMetric={metric} />
-              </>
+              <Chart data={filteredData} defaultMetric={metric} />
             ) : (
               <p className="text-gray-400 mt-4">no data for selected filters</p>
             )}
@@ -230,19 +226,20 @@ export default function Home() {
                 <div className="flex flex-col gap-2 mb-4">
                   <div className="flex gap-2 mb-2">
                     <div className="relative w-full">
-                      <input
+                      <Input
+                        dark
                         ref={inputRef}
                         type="text"
                         placeholder="Search lifts..."
-                        className="border p-2 rounded w-full"
                         value={liftSearch}
-                        onChange={(e) => {
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                           setLiftSearch(e.target.value);
                           setShowSuggestions(true);
                           setHighlightedIndex(-1);
                         }}
                         onFocus={() => setShowSuggestions(true)}
                         onKeyDown={handleKeyDown}
+                        className="w-full"
                       />
                       {showSuggestions && filteredSuggestions.length > 0 && (
                         <ul className="absolute z-10 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-md mt-1 w-full max-h-40 overflow-y-auto shadow-lg">
@@ -272,20 +269,20 @@ export default function Home() {
                           setHighlightedIndex(-1);
                         }
                       }}
-                      dark
                     >
                       Add
                     </Button>
                   </div>
                   <div className="flex gap-2 mb-2">
                     <Button
-                      type="button"
-                      onClick={() => setSelectedLifts([...liftTypes])}
                       dark
+                      type="button"
+                      onClick={() => setSelectedLifts([...liftTypes])} 
                     >
                       Select All Lifts
                     </Button>
                     <Button
+                      dark
                       type="button"
                       onClick={() => setSelectedLifts([])}
                     >
@@ -306,6 +303,15 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
+                  {/* Metric toggle inside filter modal */}
+                  <div className="mt-4">
+                    <label className="text-sm font-medium mb-2 block">Metric</label>
+                    <Toggle
+                      options={['weight', 'reps', 'volume']}
+                      selected={metric}
+                      onSelect={(val) => setMetric(val as typeof metric)}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2 mb-6">
@@ -322,10 +328,10 @@ export default function Home() {
                 </div>
 
                 <div className="flex justify-end gap-4">
-                  <Button onClick={() => setIsFilterModalOpen(false)}>
+                  <Button dark onClick={() => setIsFilterModalOpen(false)}>
                     Cancel
                   </Button>
-                  <Button dark onClick={() => setIsFilterModalOpen(false)}>
+                  <Button onClick={() => setIsFilterModalOpen(false)}>
                     Apply
                   </Button>
                 </div>
