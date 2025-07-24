@@ -15,6 +15,53 @@ import { Lift } from '../types/lift';
 import DatePicker from '../DatePicker';
 
 export default function Home() {
+  // Autocomplete state for filter modal lift search
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Hide suggestions when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    if (showSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSuggestions]);
+
+  // Keyboard navigation for suggestions
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || filteredSuggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      setHighlightedIndex((prev) => (prev + 1) % filteredSuggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      setHighlightedIndex((prev) => (prev - 1 + filteredSuggestions.length) % filteredSuggestions.length);
+    } else if (e.key === 'Enter') {
+      if (highlightedIndex >= 0 && highlightedIndex < filteredSuggestions.length) {
+        const selected = filteredSuggestions[highlightedIndex];
+        setSelectedLifts([...selectedLifts, selected]);
+        setLiftSearch('');
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+      }
+    }
+  };
+
+  // Add suggestion on click
+  const handleSuggestionClick = (suggestion: string) => {
+    setSelectedLifts([...selectedLifts, suggestion]);
+    setLiftSearch('');
+    setShowSuggestions(false);
+    setHighlightedIndex(-1);
+  };
+  // --- Filter modal lift search state ---
+  const [liftSearch, setLiftSearch] = useState('');
   const { open, setOpen } = useAuthModal();
   const [session, setSession] = useState<Session | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,6 +139,13 @@ export default function Home() {
   };
 
   const liftTypes = Array.from(new Set(liftData.map((lift) => lift.name)));
+
+  // Filtered suggestions based on liftSearch
+  const filteredSuggestions = liftTypes.filter(
+    (name) =>
+      name.toLowerCase().includes(liftSearch.toLowerCase()) &&
+      !selectedLifts.includes(name)
+  );
 
   const filteredData = liftData.filter((lift) => {
     const isTypeSelected =
@@ -173,22 +227,85 @@ export default function Home() {
                 onClose={() => setIsFilterModalOpen(false)}
               >
                 <h2 className="text-xl font-semibold mb-4">Filter Lifts</h2>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {liftTypes.map((type) => (
+                <div className="flex flex-col gap-2 mb-4">
+                  <div className="flex gap-2 mb-2">
+                    <div className="relative w-full">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        placeholder="Search lifts..."
+                        className="border p-2 rounded w-full"
+                        value={liftSearch}
+                        onChange={(e) => {
+                          setLiftSearch(e.target.value);
+                          setShowSuggestions(true);
+                          setHighlightedIndex(-1);
+                        }}
+                        onFocus={() => setShowSuggestions(true)}
+                        onKeyDown={handleKeyDown}
+                      />
+                      {showSuggestions && filteredSuggestions.length > 0 && (
+                        <ul className="absolute z-10 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-md mt-1 w-full max-h-40 overflow-y-auto shadow-lg">
+                          {filteredSuggestions.map((suggestion, index) => (
+                            <li
+                              key={suggestion}
+                              className={`px-3 py-2 cursor-pointer ${
+                                index === highlightedIndex
+                                  ? 'bg-gray-200 dark:bg-neutral-700'
+                                  : 'hover:bg-gray-100 dark:hover:bg-neutral-700'
+                              }`}
+                              onMouseDown={() => handleSuggestionClick(suggestion)}
+                            >
+                              {suggestion}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                     <Button
-                      key={type}
-                      onClick={() =>
-                        setSelectedLifts((prev) =>
-                          prev.includes(type)
-                            ? prev.filter((t) => t !== type)
-                            : [...prev, type]
-                        )
-                      }
-                      dark={selectedLifts.includes(type)}
+                      type="button"
+                      onClick={() => {
+                        if (filteredSuggestions.length > 0) {
+                          setSelectedLifts([...selectedLifts, filteredSuggestions[0]]);
+                          setLiftSearch('');
+                          setShowSuggestions(false);
+                          setHighlightedIndex(-1);
+                        }
+                      }}
+                      dark
                     >
-                      {type}
+                      Add
                     </Button>
-                  ))}
+                  </div>
+                  <div className="flex gap-2 mb-2">
+                    <Button
+                      type="button"
+                      onClick={() => setSelectedLifts([...liftTypes])}
+                      dark
+                    >
+                      Select All Lifts
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => setSelectedLifts([])}
+                    >
+                      Remove All
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedLifts.map((lift) => (
+                      <div key={lift} className="flex items-center gap-1 bg-gray-200 dark:bg-neutral-800 rounded px-2 py-1">
+                        <span>{lift}</span>
+                        <button
+                          type="button"
+                          className="text-red-500 hover:text-red-700 ml-1"
+                          onClick={() => setSelectedLifts(selectedLifts.filter(l => l !== lift))}
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2 mb-6">
