@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -11,6 +12,7 @@ import { useAuthModal } from '@/hooks/useAuthModal';
 import { Session } from '@supabase/supabase-js';
 import LiftForm from '../LiftForm';
 import { Lift } from '../types/lift';
+import DatePicker from '../DatePicker';
 
 export default function Home() {
   const { open, setOpen } = useAuthModal();
@@ -191,22 +193,14 @@ export default function Home() {
 
                 <div className="flex flex-col gap-2 mb-6">
                   <label className="text-sm font-medium">Start Date</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={dateRange[0]}
-                    onChange={(e) =>
-                      setDateRange([e.target.value, dateRange[1]])
-                    }
-                    className="border p-2 rounded"
+                    onChange={(val: string) => setDateRange([val, dateRange[1]])}
                   />
                   <label className="text-sm font-medium">End Date</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={dateRange[1]}
-                    onChange={(e) =>
-                      setDateRange([dateRange[0], e.target.value])
-                    }
-                    className="border p-2 rounded"
+                    onChange={(val: string) => setDateRange([dateRange[0], val])}
                   />
                 </div>
 
