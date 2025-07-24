@@ -29,6 +29,20 @@ const LiftForm: React.FC<LiftFormProps> = ({
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Hide suggestions when clicking outside the input box
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    if (showSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSuggestions]);
 
   /** --- Fetch past lifts --- */
   useEffect(() => {
