@@ -186,7 +186,7 @@ const Logbook: React.FC = () => {
               disabled={!nextDate}
               className={`w-12 h-10 flex items-center justify-center rounded-full text-lg transition-colors ${
                 nextDate
-                  ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
+                  ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:border-blue-400 dark:hover:border-blue-500'
                   : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
               }`}
             >

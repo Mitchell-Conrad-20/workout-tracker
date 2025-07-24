@@ -14,8 +14,11 @@ const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, small=false })
         type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={small ? 'customDatePicker w-full py-2 pl-4 border rounded-full dark:border-neutral-700 bg-white dark:bg-neutral-900 text-black dark:text-white h-10' 
-            : "customDatePicker w-full py-2 pl-4 border rounded-full dark:border-neutral-700 bg-white dark:bg-neutral-900 text-black dark:text-white h-10 sm:h-12"}
+        className={
+          small
+            ? 'customDatePicker w-full py-2 pl-4 rounded-full border border-black/[.08] dark:border-white/[.145] bg-white dark:bg-neutral-900 text-black dark:text-white h-10 transition-colors duration-300 focus:border-blue-500 dark:focus:border-blue-400 hover:border-blue-400 dark:hover:border-blue-500'
+            : 'customDatePicker w-full py-2 pl-4 rounded-full border border-black/[.08] dark:border-white/[.145] bg-white dark:bg-neutral-900 text-black dark:text-white h-10 sm:h-12 transition-colors duration-300 focus:border-blue-500 dark:focus:border-blue-400 hover:border-blue-400 dark:hover:border-blue-500'
+        }
       />
       {/* Custom icon */}
       <svg
