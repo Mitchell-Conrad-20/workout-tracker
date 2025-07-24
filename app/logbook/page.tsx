@@ -1,11 +1,13 @@
+
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
 import supabase from '../../lib/supabase';
-// import Button from '../Button';
 import Modal from '../Modal';
 import LiftForm from '../LiftForm';
 import DatePicker from '../DatePicker';
+import AuthModal from '../AuthModal';
+import { useAuthModal } from '@/hooks/useAuthModal';
 import { format, parseISO } from 'date-fns';
 import { ArrowRight, ArrowLeft} from 'lucide-react';
 
@@ -19,6 +21,8 @@ interface Lift {
 }
 
 const Logbook: React.FC = () => {
+  // Auth modal state
+  const { open, setOpen, isAuthenticated } = useAuthModal();
   const [lifts, setLifts] = useState<Lift[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingLift, setEditingLift] = useState<Lift | null>(null);
@@ -162,114 +166,123 @@ const Logbook: React.FC = () => {
 
   return (
     <div className="p-4 max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Your Logbook</h1>
-        <button
-          onClick={openNewLiftForm} 
-          className="mr-15 md:mr-0 p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
-        >
-          +
-        </button>
-      </div>
+      <AuthModal open={open} onClose={() => setOpen(false)} />
+      {isAuthenticated ? (
+        <>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold">Your Logbook</h1>
+            <button
+              onClick={openNewLiftForm}
+              className="mr-15 md:mr-0 p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+            >
+              +
+            </button>
+          </div>
 
-      {/* Calendar-style date picker with arrows */}
-      <div className="flex items-center justify-center gap-3 mb-6">
-        <button
-          onClick={() => nextDate && setSelectedDate(nextDate)}
-          disabled={!nextDate}
-          className={`w-12 h-10 flex items-center justify-center rounded-full text-lg transition-colors ${
-            nextDate
-              ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
-              : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
-          }`}
-        >
-          <ArrowLeft />
-        </button>
-        <DatePicker
-          value={selectedDate || ''}
-          onChange={(date) => handleDateSelect(date ? new Date(date) : null)}
-          small
-        />
-        <button
-          onClick={() => prevDate && setSelectedDate(prevDate)}
-          disabled={!prevDate}
-          className={`w-12 h-10 flex items-center justify-center rounded-full transition-colors ${
-            prevDate
-              ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
-              : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
-          }`}
-        >
-          <ArrowRight />
-        </button>
+          {/* Calendar-style date picker with arrows */}
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <button
+              onClick={() => nextDate && setSelectedDate(nextDate)}
+              disabled={!nextDate}
+              className={`w-12 h-10 flex items-center justify-center rounded-full text-lg transition-colors ${
+                nextDate
+                  ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
+                  : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
+              }`}
+            >
+              <ArrowLeft />
+            </button>
+            <DatePicker
+              value={selectedDate || ''}
+              onChange={(date) => handleDateSelect(date ? new Date(date) : null)}
+              small
+            />
+            <button
+              onClick={() => prevDate && setSelectedDate(prevDate)}
+              disabled={!prevDate}
+              className={`w-12 h-10 flex items-center justify-center rounded-full transition-colors ${
+                prevDate
+                  ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
+                  : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
+              }`}
+            >
+              <ArrowRight />
+            </button>
+          </div>
 
-      </div>
-
-      {/* Display "page" */}
-      {selectedDate && currentLifts.length > 0 ? (
-        <div className="bg-white dark:bg-neutral-900 p-4 rounded shadow">
-          <h2 className="text-xl font-semibold mb-4">
-            {format(parseISO(selectedDate), 'MMMM d, yyyy')}
-          </h2>
-          {/* Display lifts in sorted groups of sorted data */}
-          {Object.entries(groupedByExercise)
-            .sort(([a], [b]) => a.localeCompare(b)) // Alphabetize exercises
-            .map(([exerciseName, sets]) => (
-              <div
-                key={exerciseName}
-                className="mb-4 p-3 border rounded dark:border-neutral-700"
-              >
-                <p className="font-medium mb-2">{exerciseName}</p>
-                <div className="space-y-1">
-                  {sets
-                    .slice() // Copy to avoid mutating state
-                    .sort((a, b) => b.weight - a.weight) // Heaviest first
-                    .map((set) => (
-                      <div
-                        key={set.id}
-                        className="flex justify-between items-center"
-                      >
-                        <p>
-                          {set.weight} lbs × {set.reps} reps
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(set)}
-                            className="cursor-pointer text-blue-600 hover:underline"
+          {/* Display "page" */}
+          {selectedDate && currentLifts.length > 0 ? (
+            <div className="bg-white dark:bg-neutral-900 p-4 rounded shadow">
+              <h2 className="text-xl font-semibold mb-4">
+                {format(parseISO(selectedDate), 'MMMM d, yyyy')}
+              </h2>
+              {/* Display lifts in sorted groups of sorted data */}
+              {Object.entries(groupedByExercise)
+                .sort(([a], [b]) => a.localeCompare(b)) // Alphabetize exercises
+                .map(([exerciseName, sets]) => (
+                  <div
+                    key={exerciseName}
+                    className="mb-4 p-3 border rounded dark:border-neutral-700"
+                  >
+                    <p className="font-medium mb-2">{exerciseName}</p>
+                    <div className="space-y-1">
+                      {sets
+                        .slice() // Copy to avoid mutating state
+                        .sort((a, b) => b.weight - a.weight) // Heaviest first
+                        .map((set) => (
+                          <div
+                            key={set.id}
+                            className="flex justify-between items-center"
                           >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(set.id)}
-                            className="cursor-pointer text-red-600 hover:underline"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            ))}
-        </div>
+                            <p>
+                              {set.weight} lbs × {set.reps} reps
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEdit(set)}
+                                className="cursor-pointer text-blue-600 hover:underline"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(set.id)}
+                                className="cursor-pointer text-red-600 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <div className="text-neutral-500">
+              {selectedDate
+                ? 'No lifts recorded on this date.'
+                : 'Select a date to view your lifts.'}
+            </div>
+          )}
+
+          {/* Add/Edit Modal */}
+          <Modal open={showModal} onClose={() => setShowModal(false)}>
+            <h2 className="text-lg font-semibold mb-4">
+              {editingLift ? 'Edit Lift' : 'Add Lift'}
+            </h2>
+            <LiftForm
+              initialData={editingLift}
+              onSubmit={handleFormSubmit}
+              onCancel={() => setShowModal(false)}
+            />
+          </Modal>
+        </>
       ) : (
-        <div className="text-neutral-500">
-          {selectedDate
-            ? 'No lifts recorded on this date.'
-            : 'Select a date to view your lifts.'}
+        <div className="flex flex-col items-center justify-center h-64 text-neutral-500">
+          <h2 className="text-xl font-semibold mb-2">No data available</h2>
+          <p>Please log in to view your logbook.</p>
         </div>
       )}
-
-      {/* Add/Edit Modal */}
-      <Modal open={showModal} onClose={() => setShowModal(false)}>
-        <h2 className="text-lg font-semibold mb-4">
-          {editingLift ? 'Edit Lift' : 'Add Lift'}
-        </h2>
-        <LiftForm
-          initialData={editingLift}
-          onSubmit={handleFormSubmit}
-          onCancel={() => setShowModal(false)}
-        />
-      </Modal>
     </div>
   );
 };
