@@ -1,6 +1,8 @@
+
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Input from '../Input';
 import Button from '../Button';
 import Modal from '../Modal';
 import Chart from '../Chart';
@@ -11,8 +13,56 @@ import { useAuthModal } from '@/hooks/useAuthModal';
 import { Session } from '@supabase/supabase-js';
 import LiftForm from '../LiftForm';
 import { Lift } from '../types/lift';
+import DatePicker from '../DatePicker';
 
 export default function Home() {
+  // Autocomplete state for filter modal lift search
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Hide suggestions when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    if (showSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSuggestions]);
+
+  // Keyboard navigation for suggestions
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || filteredSuggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      setHighlightedIndex((prev) => (prev + 1) % filteredSuggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      setHighlightedIndex((prev) => (prev - 1 + filteredSuggestions.length) % filteredSuggestions.length);
+    } else if (e.key === 'Enter') {
+      if (highlightedIndex >= 0 && highlightedIndex < filteredSuggestions.length) {
+        const selected = filteredSuggestions[highlightedIndex];
+        setSelectedLifts([...selectedLifts, selected]);
+        setLiftSearch('');
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+      }
+    }
+  };
+
+  // Add suggestion on click
+  const handleSuggestionClick = (suggestion: string) => {
+    setSelectedLifts([...selectedLifts, suggestion]);
+    setLiftSearch('');
+    setShowSuggestions(false);
+    setHighlightedIndex(-1);
+  };
+  // --- Filter modal lift search state ---
+  const [liftSearch, setLiftSearch] = useState('');
   const { open, setOpen } = useAuthModal();
   const [session, setSession] = useState<Session | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -91,6 +141,13 @@ export default function Home() {
 
   const liftTypes = Array.from(new Set(liftData.map((lift) => lift.name)));
 
+  // Filtered suggestions based on liftSearch
+  const filteredSuggestions = liftTypes.filter(
+    (name) =>
+      name.toLowerCase().includes(liftSearch.toLowerCase()) &&
+      !selectedLifts.includes(name)
+  );
+
   const filteredData = liftData.filter((lift) => {
     const isTypeSelected =
       selectedLifts.length === 0 || selectedLifts.includes(lift.name);
@@ -106,23 +163,25 @@ export default function Home() {
   };
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="w-full sm:w-5/6 md:w-2/3 flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <h1 className="text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">
-          chart
-        </h1>
+    <div className="min-h-screen pt-4 pb-20 gap-16 sm:pb-20 font-[family-name:var(--font-geist-sans)] flex justify-center">
+      <main className="w-full sm:w-5/6 md:w-2/3 flex flex-col gap-[32px] items-center sm:items-start">
+        <div className="flex items-center justify-between w-full mb-2">
+          <h1 className="px-4 text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">Your Chart</h1>
+          {session && (
+            <button
+              onClick={handleOpenModal}
+              className="mr-15 md:mr-0 p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+            >
+              +
+            </button>
+          )}
+        </div>
 
         <AuthModal open={open} onClose={() => setOpen(false)} />
 
         {session && (
           <>
-            <div className="flex flex-col md:flex-row gap-2 w-full">
-              <button
-                onClick={handleOpenModal}
-                className="p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
-              >
-                +
-              </button>
+            <div className="px-4 flex flex-col md:flex-row gap-2 w-full">
               <Button
                 dark
                 onClick={() => setIsFilterModalOpen(true)}
@@ -130,26 +189,19 @@ export default function Home() {
               >
                 filter lifts
               </Button>
-            </div>
 
-            {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
-              <Button onClick={handleClearFilters} className="text-sm">
+              {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
+              <Button onClick={handleClearFilters} >
                 clear filters
               </Button>
             )}
 
+            </div>
+
             {loading ? (
               <p className="text-gray-500">Loading chart...</p>
             ) : filteredData.length > 0 ? (
-              <>
-                {/* Global metric toggle */}
-                <Toggle
-                  options={['weight', 'reps', 'volume']}
-                  selected={metric}
-                  onSelect={(val) => setMetric(val as typeof metric)}
-                />
-                <Chart data={filteredData} defaultMetric={metric} />
-              </>
+              <Chart data={filteredData} defaultMetric={metric} />
             ) : (
               <p className="text-gray-400 mt-4">no data for selected filters</p>
             )}
@@ -171,50 +223,115 @@ export default function Home() {
                 onClose={() => setIsFilterModalOpen(false)}
               >
                 <h2 className="text-xl font-semibold mb-4">Filter Lifts</h2>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {liftTypes.map((type) => (
+                <div className="flex flex-col gap-2 mb-4">
+                  <div className="flex gap-2 mb-2">
+                    <div className="relative w-full">
+                      <Input
+                        dark
+                        ref={inputRef}
+                        type="text"
+                        placeholder="Search lifts..."
+                        value={liftSearch}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          setLiftSearch(e.target.value);
+                          setShowSuggestions(true);
+                          setHighlightedIndex(-1);
+                        }}
+                        onFocus={() => setShowSuggestions(true)}
+                        onKeyDown={handleKeyDown}
+                        className="w-full"
+                      />
+                      {showSuggestions && filteredSuggestions.length > 0 && (
+                        <ul className="absolute z-10 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-md mt-1 w-full max-h-40 overflow-y-auto shadow-lg">
+                          {filteredSuggestions.map((suggestion, index) => (
+                            <li
+                              key={suggestion}
+                              className={`px-3 py-2 cursor-pointer ${
+                                index === highlightedIndex
+                                  ? 'bg-gray-200 dark:bg-neutral-700'
+                                  : 'hover:bg-gray-100 dark:hover:bg-neutral-700'
+                              }`}
+                              onMouseDown={() => handleSuggestionClick(suggestion)}
+                            >
+                              {suggestion}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                     <Button
-                      key={type}
-                      onClick={() =>
-                        setSelectedLifts((prev) =>
-                          prev.includes(type)
-                            ? prev.filter((t) => t !== type)
-                            : [...prev, type]
-                        )
-                      }
-                      dark={selectedLifts.includes(type)}
+                      type="button"
+                      onClick={() => {
+                        if (filteredSuggestions.length > 0) {
+                          setSelectedLifts([...selectedLifts, filteredSuggestions[0]]);
+                          setLiftSearch('');
+                          setShowSuggestions(false);
+                          setHighlightedIndex(-1);
+                        }
+                      }}
                     >
-                      {type}
+                      Add
                     </Button>
-                  ))}
+                  </div>
+                  <div className="flex gap-2 mb-2">
+                    <Button
+                      dark
+                      type="button"
+                      onClick={() => setSelectedLifts([...liftTypes])} 
+                    >
+                      Select All Lifts
+                    </Button>
+                    <Button
+                      dark
+                      type="button"
+                      onClick={() => setSelectedLifts([])}
+                    >
+                      Remove All
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedLifts.map((lift) => (
+                      <div key={lift} className="flex items-center gap-1 bg-gray-200 dark:bg-neutral-800 rounded px-2 py-1">
+                        <span>{lift}</span>
+                        <button
+                          type="button"
+                          className="text-red-500 hover:text-red-700 ml-1"
+                          onClick={() => setSelectedLifts(selectedLifts.filter(l => l !== lift))}
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Metric toggle inside filter modal */}
+                  <div className="mt-4">
+                    <label className="text-sm font-medium mb-2 block">Metric</label>
+                    <Toggle
+                      options={['weight', 'reps', 'volume']}
+                      selected={metric}
+                      onSelect={(val) => setMetric(val as typeof metric)}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2 mb-6">
                   <label className="text-sm font-medium">Start Date</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={dateRange[0]}
-                    onChange={(e) =>
-                      setDateRange([e.target.value, dateRange[1]])
-                    }
-                    className="border p-2 rounded"
+                    onChange={(val: string) => setDateRange([val, dateRange[1]])}
                   />
                   <label className="text-sm font-medium">End Date</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={dateRange[1]}
-                    onChange={(e) =>
-                      setDateRange([dateRange[0], e.target.value])
-                    }
-                    className="border p-2 rounded"
+                    onChange={(val: string) => setDateRange([dateRange[0], val])}
                   />
                 </div>
 
                 <div className="flex justify-end gap-4">
-                  <Button onClick={() => setIsFilterModalOpen(false)}>
+                  <Button dark onClick={() => setIsFilterModalOpen(false)}>
                     Cancel
                   </Button>
-                  <Button dark onClick={() => setIsFilterModalOpen(false)}>
+                  <Button onClick={() => setIsFilterModalOpen(false)}>
                     Apply
                   </Button>
                 </div>

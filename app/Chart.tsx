@@ -22,6 +22,13 @@ type ChartProps = {
 };
 
 const Chart: React.FC<ChartProps> = ({ data, defaultMetric }) => {
+  // Helper to get all sets for a lift on a given date
+  const getSetsForLiftOnDate = (liftName: string, date: string) => {
+    return data
+      .filter((l) => l.name === liftName && l.date === date)
+      .map((set) => `${set.weight}x${set.reps}`)
+      .join(', ');
+  };
   const [mounted, setMounted] = useState(false);
 
   // Run all hooks regardless of mounted state
@@ -89,14 +96,30 @@ const Chart: React.FC<ChartProps> = ({ data, defaultMetric }) => {
             <XAxis dataKey="date" />
             <YAxis />
             <Tooltip
-              contentStyle={{
-                backgroundColor: '#1f2937',
-                borderRadius: '8px',
-                border: 'none',
-                color: '#fff',
+              content={({ active, payload, label }) => {
+                if (!active || !payload || !label) return null;
+                // Find which lift is hovered
+                const hoveredLiftNames = payload
+                  .filter((p) => p.dataKey && p.value !== null)
+                  .map((p) => {
+                    // dataKey is like "Overhead Press_weight"; extract lift name
+                    const [liftName] = p.dataKey.split('_');
+                    return liftName;
+                  });
+                return (
+                  <div className="p-3 bg-gray-900 rounded shadow text-white min-w-[180px]">
+                    <div className="text-xs text-gray-300 mb-2">{label}</div>
+                    {hoveredLiftNames.map((liftName) => {
+                      const sets = getSetsForLiftOnDate(liftName, String(label));
+                      return (
+                        <div key={liftName} className="mb-1">
+                          <span className="font-semibold">{liftName}:</span> {sets || 'No sets'}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
               }}
-              labelStyle={{ color: '#ccc' }}
-              itemStyle={{ color: '#fff' }}
             />
             <Legend />
             {liftNames.map((name, idx) => (

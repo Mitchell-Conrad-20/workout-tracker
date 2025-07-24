@@ -31,7 +31,7 @@ const Modal: React.FC<ModalProps> = ({ children, open = false, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="relative flex flex-col gap-4 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 p-6 rounded-2xl shadow-2xl max-w-md w-full transition-all"
+        className="relative flex flex-col gap-4 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 p-6 rounded-2xl shadow-2xl max-w-md w-full transition-all max-h-[80vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}

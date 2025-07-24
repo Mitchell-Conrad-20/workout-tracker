@@ -101,7 +101,7 @@ export default function HamburgerMenu() {
                   setIsOpen(false);
                   setOpen(true);
                 }}
-                className="text-blue-500 hover:underline transition duration-200"
+                className="cursor-pointer text-blue-500 hover:underline transition duration-200"
               >
                 Log In / Sign Up
               </button>
