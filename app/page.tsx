@@ -13,11 +13,68 @@ import { Session } from '@supabase/supabase-js';
 import { Lift } from './types/lift';
 
 export default function Home() {
+  // lifts state removed
+  const [stats, setStats] = useState<{
+    didWorkoutToday: boolean;
+    totalWorkouts: number;
+    mostImproved?: { name: string; diff: number };
+    leastImproved?: { name: string; diff: number };
+  }>({ didWorkoutToday: false, totalWorkouts: 0 });
   const { open, setOpen } = useAuthModal();
   const [session, setSession] = useState<Session | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [editingLift, setEditingLift] = useState<Lift | null>(null);
+
+  useEffect(() => {
+    if (!session) {
+      setStats({ didWorkoutToday: false, totalWorkouts: 0 });
+      return;
+    }
+    // Fetch all lifts for stats
+    supabase
+      .from('lifts')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .then(({ data, error }) => {
+        if (error || !data) return;
+        // Calculate stats
+        const today = new Date().toISOString().split('T')[0];
+        const didWorkoutToday = data.some(l => l.date && l.date.startsWith(today));
+        // Group by date (workout session)
+        const workoutDates = Array.from(new Set(data.map(l => l.date.split('T')[0])));
+        const totalWorkouts = workoutDates.length;
+
+        // Group lifts by name
+        const liftsByName: Record<string, Lift[]> = {};
+        data.forEach(l => {
+          if (!liftsByName[l.name]) liftsByName[l.name] = [];
+          liftsByName[l.name].push(l);
+        });
+
+        // Calculate improvement for each lift (max weight diff from first to last session)
+        const improvements: { name: string; diff: number }[] = [];
+        Object.entries(liftsByName).forEach(([name, arr]) => {
+          // Sort by date
+          const sorted = arr.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          if (sorted.length < 2) return;
+          const first = sorted[0].weight;
+          const last = sorted[sorted.length - 1].weight;
+          improvements.push({ name, diff: last - first });
+        });
+        let mostImproved, leastImproved;
+        if (improvements.length > 0) {
+          mostImproved = improvements.reduce((a, b) => (b.diff > a.diff ? b : a));
+          leastImproved = improvements.reduce((a, b) => (b.diff < a.diff ? b : a));
+        }
+        setStats({
+          didWorkoutToday,
+          totalWorkouts,
+          mostImproved,
+          leastImproved,
+        });
+      });
+  }, [session]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -61,15 +118,49 @@ export default function Home() {
   };
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <h1 className="text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">
-          workout tracker
-        </h1>
-
-        <div className="font-[family-name:var(--font-geist-mono)]">
-          a better way to track your progress
+    <div className="p-4 max-w-3xl mx-auto min-h-screen flex flex-col">
+      <main className="flex flex-col gap-[32px] flex-1">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">
+            Auralift
+          </h1>
+          {session && (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="p-1 mr-15 md:mr-0 sm:mr-2 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+            >
+              +
+            </button>
+          )}
         </div>
+
+        {session && (
+          <div className="mb-6 text-center text-lg sm:text-xl font-[family-name:var(--font-geist-mono)]">
+            {stats.didWorkoutToday ? (
+              <div className="mb-2 text-green-600 dark:text-green-400 font-semibold">🎉 Congrats on getting your workout in today!</div>
+            ) : (
+              <div className="mb-2 text-blue-600 dark:text-blue-400 font-semibold">You haven't worked out yet today. Let's get after it!</div>
+            )}
+            <div>
+              {stats.totalWorkouts > 0 && (
+                <>You've logged <span className="font-bold">{stats.totalWorkouts}</span> workout{stats.totalWorkouts === 1 ? '' : 's'} this year.</>
+              )}
+            </div>
+            {stats.mostImproved && stats.leastImproved && stats.mostImproved.name !== stats.leastImproved.name && (
+              <div className="mt-2">
+                <span>Your most improved lift is <span className="font-bold">{stats.mostImproved.name}</span> (+{stats.mostImproved.diff} lbs)</span>
+                <br />
+                <span>Your least improved lift is <span className="font-bold">{stats.leastImproved.name}</span> ({stats.leastImproved.diff >= 0 ? '+' : ''}{stats.leastImproved.diff} lbs)</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!session && (
+          <div className="font-[family-name:var(--font-geist-mono)] text-center text-xl sm:text-2xl font-medium mb-2">
+            a better way to track your progress
+          </div>
+        )}
 
         <AuthModal open={open} onClose={() => setOpen(false)} />
 
@@ -79,15 +170,6 @@ export default function Home() {
           </Button>
         ) : (
           <>
-            <div className="flex flex-col md:flex-row gap-2 w-full">
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="mr-15 md:mr-0 p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
-              >
-                +
-              </button>
-            </div>
-
             {/* Add Lift Modal */}
             <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
               <h2 className="text-lg font-semibold mb-4">Add Lift</h2>
@@ -101,7 +183,7 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
+      <footer className="flex gap-[24px] flex-wrap items-center justify-center mt-8">
         <a
           className="flex items-center gap-2 hover:underline hover:underline-offset-4"
           href="https://mconrad.tech/"
