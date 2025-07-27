@@ -13,11 +13,70 @@ import { Session } from '@supabase/supabase-js';
 import { Lift } from './types/lift';
 
 export default function Home() {
+  const [lifts, setLifts] = useState<Lift[]>([]);
+  const [stats, setStats] = useState<{
+    didWorkoutToday: boolean;
+    totalWorkouts: number;
+    mostImproved?: { name: string; diff: number };
+    leastImproved?: { name: string; diff: number };
+  }>({ didWorkoutToday: false, totalWorkouts: 0 });
   const { open, setOpen } = useAuthModal();
   const [session, setSession] = useState<Session | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [editingLift, setEditingLift] = useState<Lift | null>(null);
+
+  useEffect(() => {
+    if (!session) {
+      setLifts([]);
+      setStats({ didWorkoutToday: false, totalWorkouts: 0 });
+      return;
+    }
+    // Fetch all lifts for stats
+    supabase
+      .from('lifts')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .then(({ data, error }) => {
+        if (error || !data) return;
+        setLifts(data);
+        // Calculate stats
+        const today = new Date().toISOString().split('T')[0];
+        const didWorkoutToday = data.some(l => l.date && l.date.startsWith(today));
+        // Group by date (workout session)
+        const workoutDates = Array.from(new Set(data.map(l => l.date.split('T')[0])));
+        const totalWorkouts = workoutDates.length;
+
+        // Group lifts by name
+        const liftsByName: Record<string, Lift[]> = {};
+        data.forEach(l => {
+          if (!liftsByName[l.name]) liftsByName[l.name] = [];
+          liftsByName[l.name].push(l);
+        });
+
+        // Calculate improvement for each lift (max weight diff from first to last session)
+        const improvements: { name: string; diff: number }[] = [];
+        Object.entries(liftsByName).forEach(([name, arr]) => {
+          // Sort by date
+          const sorted = arr.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          if (sorted.length < 2) return;
+          const first = sorted[0].weight;
+          const last = sorted[sorted.length - 1].weight;
+          improvements.push({ name, diff: last - first });
+        });
+        let mostImproved, leastImproved;
+        if (improvements.length > 0) {
+          mostImproved = improvements.reduce((a, b) => (b.diff > a.diff ? b : a));
+          leastImproved = improvements.reduce((a, b) => (b.diff < a.diff ? b : a));
+        }
+        setStats({
+          didWorkoutToday,
+          totalWorkouts,
+          mostImproved,
+          leastImproved,
+        });
+      });
+  }, [session]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -76,6 +135,26 @@ export default function Home() {
             </button>
           )}
         </div>
+
+        {session && (
+          <div className="mb-6 text-center text-lg sm:text-xl font-[family-name:var(--font-geist-mono)]">
+            {stats.didWorkoutToday && (
+              <div className="mb-2 text-green-600 dark:text-green-400 font-semibold">🎉 Congrats on getting your workout in today!</div>
+            )}
+            <div>
+              {stats.totalWorkouts > 0 && (
+                <>You've logged <span className="font-bold">{stats.totalWorkouts}</span> workout{stats.totalWorkouts === 1 ? '' : 's'} this year.</>
+              )}
+            </div>
+            {stats.mostImproved && stats.leastImproved && stats.mostImproved.name !== stats.leastImproved.name && (
+              <div className="mt-2">
+                <span>Your most improved lift is <span className="font-bold">{stats.mostImproved.name}</span> (+{stats.mostImproved.diff} lbs)</span>
+                <br />
+                <span>Your least improved lift is <span className="font-bold">{stats.leastImproved.name}</span> ({stats.leastImproved.diff >= 0 ? '+' : ''}{stats.leastImproved.diff} lbs)</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {!session && (
           <div className="font-[family-name:var(--font-geist-mono)] text-center text-xl sm:text-2xl font-medium mb-2">
