@@ -139,11 +139,11 @@ export default function Home() {
             {stats.didWorkoutToday ? (
               <div className="mb-2 text-green-600 dark:text-green-400 font-semibold">🎉 Congrats on getting your workout in today!</div>
             ) : (
-              <div className="mb-2 text-blue-600 dark:text-blue-400 font-semibold">You haven't worked out yet today. Let's get after it!</div>
+              <div className="mb-2 text-blue-600 dark:text-blue-400 font-semibold">You haven&apos;t worked out yet today. Let&apos;s get after it!</div>
             )}
             <div>
               {stats.totalWorkouts > 0 && (
-                <>You've logged <span className="font-bold">{stats.totalWorkouts}</span> workout{stats.totalWorkouts === 1 ? '' : 's'} this year.</>
+                <>You&apos;ve logged <span className="font-bold">{stats.totalWorkouts}</span> workout{stats.totalWorkouts === 1 ? '' : 's'} this year.</>
               )}
             </div>
             {stats.mostImproved && stats.leastImproved && stats.mostImproved.name !== stats.leastImproved.name && (
