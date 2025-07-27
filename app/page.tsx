@@ -138,8 +138,10 @@ export default function Home() {
 
         {session && (
           <div className="mb-6 text-center text-lg sm:text-xl font-[family-name:var(--font-geist-mono)]">
-            {stats.didWorkoutToday && (
+            {stats.didWorkoutToday ? (
               <div className="mb-2 text-green-600 dark:text-green-400 font-semibold">🎉 Congrats on getting your workout in today!</div>
+            ) : (
+              <div className="mb-2 text-blue-600 dark:text-blue-400 font-semibold">You haven't worked out yet today. Let's get after it!</div>
             )}
             <div>
               {stats.totalWorkouts > 0 && (
