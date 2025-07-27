@@ -165,9 +165,11 @@ export default function Home() {
         <AuthModal open={open} onClose={() => setOpen(false)} />
 
         {!session ? (
-          <Button onClick={() => setOpen(true)} dark>
-            Log In / Sign Up
-          </Button>
+          <div className='w-full flex justify-center'>
+            <Button onClick={() => setOpen(true)} dark>
+              Log In / Sign Up
+            </Button>
+          </div>
         ) : (
           <>
             {/* Add Lift Modal */}
