@@ -13,7 +13,7 @@ import { Session } from '@supabase/supabase-js';
 import { Lift } from './types/lift';
 
 export default function Home() {
-  const [lifts, setLifts] = useState<Lift[]>([]);
+  // lifts state removed
   const [stats, setStats] = useState<{
     didWorkoutToday: boolean;
     totalWorkouts: number;
@@ -28,7 +28,6 @@ export default function Home() {
 
   useEffect(() => {
     if (!session) {
-      setLifts([]);
       setStats({ didWorkoutToday: false, totalWorkouts: 0 });
       return;
     }
@@ -39,7 +38,6 @@ export default function Home() {
       .eq('user_id', session.user.id)
       .then(({ data, error }) => {
         if (error || !data) return;
-        setLifts(data);
         // Calculate stats
         const today = new Date().toISOString().split('T')[0];
         const didWorkoutToday = data.some(l => l.date && l.date.startsWith(today));
