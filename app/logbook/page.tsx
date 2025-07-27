@@ -152,7 +152,9 @@ const Logbook: React.FC = () => {
   const prevDate = currentIndex > 0 ? dates[currentIndex - 1] : null;
   const nextDate = currentIndex >= 0 && currentIndex < dates.length - 1 ? dates[currentIndex + 1] : null;
 
-  const currentLifts = selectedDate ? groupedLifts[selectedDate] || [] : [];
+  const currentLifts = React.useMemo(() => (
+    selectedDate ? groupedLifts[selectedDate] || [] : []
+  ), [selectedDate, groupedLifts]);
 
   // Group current lifts by exercise name
   const groupedByExercise = useMemo(() => {
