@@ -39,7 +39,12 @@ export default function Home() {
       .then(({ data, error }) => {
         if (error || !data) return;
         // Calculate stats
-        const today = new Date().toISOString().split('T')[0];
+        // Use local date for today
+        const localDate = new Date();
+        const year = localDate.getFullYear();
+        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localDate.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
         const didWorkoutToday = data.some(l => l.date && l.date.startsWith(today));
         // Group by date (workout session)
         const workoutDates = Array.from(new Set(data.map(l => l.date.split('T')[0])));

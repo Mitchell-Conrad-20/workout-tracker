@@ -63,7 +63,7 @@ export default function Home() {
   };
   // --- Filter modal lift search state ---
   const [liftSearch, setLiftSearch] = useState('');
-  const { open, setOpen } = useAuthModal();
+  const { open, setOpen, isAuthenticated } = useAuthModal();
   const [session, setSession] = useState<Session | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -164,6 +164,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen pt-4 pb-20 gap-16 sm:pb-20 font-[family-name:var(--font-geist-sans)] flex justify-center">
+      <AuthModal open={open} onClose={() => setOpen(false)} />
+      {isAuthenticated ? (
       <main className="w-full sm:w-5/6 md:w-2/3 flex flex-col gap-[32px] items-center sm:items-start">
         <div className="flex items-center justify-between w-full mb-2">
           <h1 className="px-4 text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">Your Chart</h1>
@@ -176,8 +178,6 @@ export default function Home() {
             </button>
           )}
         </div>
-
-        <AuthModal open={open} onClose={() => setOpen(false)} />
 
         {session && (
           <>
@@ -340,6 +340,14 @@ export default function Home() {
           </>
         )}
       </main>
+      ) : (
+
+      <div className="flex flex-col items-center justify-center h-64 text-neutral-500">
+        <h2 className="text-xl font-semibold mb-2">No data available</h2>
+        <p>Please log in to view your logbook.</p>
+      </div>
+      )}
+
     </div>
   );
 }
