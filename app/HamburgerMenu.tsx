@@ -6,25 +6,11 @@ import { Menu, X } from 'lucide-react';
 import Button from './Button';
 import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
-import type { Session } from '@supabase/supabase-js';
 
 export default function HamburgerMenu() {
-  const { setOpen } = useAuthModal();
+  const { setOpen, isAuthenticated } = useAuthModal();
   const [isOpen, setIsOpen] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -47,7 +33,6 @@ export default function HamburgerMenu() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setSession(null);
     setIsOpen(false);
   };
 
@@ -68,45 +53,51 @@ export default function HamburgerMenu() {
         }`}
       >
         <div className="flex flex-col p-4 gap-3 text-sm font-medium">
-          <Link
-            href="/"
-            onClick={() => setIsOpen(false)}
-            className="transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
-          >
-            Home
-          </Link>
-
-          <Link
-            href="/logbook"
-            onClick={() => setIsOpen(false)}
-            className="transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
-          >
-            Logbook
-          </Link>
-
-          <Link
-            href="/chart"
-            onClick={() => setIsOpen(false)}
-            className="transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
-          >
-            Chart
-          </Link>
-
-          <div className="mt-2 border-t border-gray-300 dark:border-white/[.1] pt-3">
-            {session ? (
-              <Button dark onClick={handleLogout}>Log Out</Button>
-            ) : (
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  setOpen(true);
-                }}
-                className="cursor-pointer text-blue-500 hover:underline transition duration-200"
+          {isAuthenticated ? (
+            <>
+              <Link
+                href="/"
+                onClick={() => setIsOpen(false)}
+                className="transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
               >
-                Log In / Sign Up
-              </button>
-            )}
-          </div>
+                Home
+              </Link>
+
+              <Link
+                href="/logbook"
+                onClick={() => setIsOpen(false)}
+                className="transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
+              >
+                Logbook
+              </Link>
+
+              <Link
+                href="/chart"
+                onClick={() => setIsOpen(false)}
+                className="transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
+              >
+                Chart
+              </Link>
+
+              <div className="mt-2 border-t border-gray-300 dark:border-white/[.1] pt-3">
+                  <Button dark onClick={handleLogout}>Log Out</Button>
+              </div>
+
+            </>
+          ) : (
+
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                setOpen(true);
+              }}
+              className="cursor-pointer text-blue-500 hover:underline transition duration-200"
+            >
+              Log In / Sign Up
+            </button>
+
+          )}
+
         </div>
       </div>
     </div>
