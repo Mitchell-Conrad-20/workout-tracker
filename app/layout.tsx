@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 // import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import HamburgerMenu from './HamburgerMenu';
+import HamburgerMenu from '@/components/HamburgerMenu';
 import { AuthModalProvider } from '@/hooks/useAuthModal';
 
 // const geistSans = Geist({

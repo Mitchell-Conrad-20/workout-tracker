@@ -1,16 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import Image from 'next/image';
-import icon from '../public/icon.png';
-import Button from './Button';
-import Modal from './Modal';
-import AuthModal from './AuthModal';
-import LiftForm from './LiftForm';
+import icon from '@/public/icon.png';
+import Button from '@/components/Button';
+import Modal from '@/components/Modal';
+import AuthModal from '@/components/AuthModal';
+import LiftForm from '@/components/LiftForm';
 import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { Session } from '@supabase/supabase-js';
-import { Lift } from './types/lift';
+import { Lift } from '@/types/lift';
 
 export default function Home() {
   // lifts state removed
@@ -25,6 +26,7 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [editingLift, setEditingLift] = useState<Lift | null>(null);
+  const [refreshStats, setRefreshStats] = useState(0);
 
   useEffect(() => {
     if (!session) {
@@ -39,12 +41,8 @@ export default function Home() {
       .then(({ data, error }) => {
         if (error || !data) return;
         // Calculate stats
-        // Use local date for today
-        const localDate = new Date();
-        const year = localDate.getFullYear();
-        const month = String(localDate.getMonth() + 1).padStart(2, '0');
-        const day = String(localDate.getDate()).padStart(2, '0');
-        const today = `${year}-${month}-${day}`;
+        // Use date-fns for deterministic local date
+        const today = format(new Date(), 'yyyy-MM-dd');
         const didWorkoutToday = data.some(l => l.date && l.date.startsWith(today));
         // Group by date (workout session)
         const workoutDates = Array.from(new Set(data.map(l => l.date.split('T')[0])));
@@ -79,7 +77,7 @@ export default function Home() {
           leastImproved,
         });
       });
-  }, [session]);
+  }, [session, refreshStats]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -105,7 +103,7 @@ export default function Home() {
           name: liftData.name,
           weight: liftData.weight,
           reps: liftData.reps,
-          date: liftData.date || new Date().toISOString().split('T')[0], // default to today
+          date: liftData.date || format(new Date(), 'yyyy-MM-dd'), // default to today
         }])
         .select();
 
@@ -117,6 +115,7 @@ export default function Home() {
       console.log('Lift added:', data);
       setIsModalOpen(false);
       setEditingLift(null);
+      setRefreshStats((prev) => prev + 1);
     } catch (err) {
       console.error('Unexpected error in handleFormSubmit:', err);
     }

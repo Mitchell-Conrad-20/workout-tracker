@@ -2,18 +2,19 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import Input from '../Input';
-import Button from '../Button';
-import Modal from '../Modal';
-import Chart from '../Chart';
-import Toggle from '../Toggle';
-import AuthModal from '../AuthModal';
+import { format } from 'date-fns';
+import Input from '@/components/Input';
+import Button from '@/components/Button';
+import Modal from '@/components/Modal';
+import Chart from '@/components/Chart';
+import Toggle from '@/components/Toggle';
+import AuthModal from '@/components/AuthModal';
 import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { Session } from '@supabase/supabase-js';
-import LiftForm from '../LiftForm';
-import { Lift } from '../types/lift';
-import DatePicker from '../DatePicker';
+import LiftForm from '@/components/LiftForm';
+import { Lift } from '@/types/lift';
+import DatePicker from '@/components/DatePicker';
 
 export default function Home() {
   // Autocomplete state for filter modal lift search
@@ -126,7 +127,7 @@ export default function Home() {
           name: formData.name,
           weight: Number(formData.weight),
           reps: Number(formData.reps),
-          date: formData.date || new Date().toISOString().split('T')[0],
+          date: formData.date || format(new Date(), 'yyyy-MM-dd'),
         },
       ]);
 
