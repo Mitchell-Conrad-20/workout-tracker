@@ -2,13 +2,14 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import supabase from '../../lib/supabase';
-import Modal from '../Modal';
-import LiftForm from '../LiftForm';
-import DatePicker from '../DatePicker';
-import AuthModal from '../AuthModal';
+import supabase from '@/lib/supabase';
+import Modal from '@/components/Modal';
+import LiftForm from '@/components/LiftForm';
+import DatePicker from '@/components/DatePicker';
+import AuthModal from '@/components/AuthModal';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { format, parseISO } from 'date-fns';
+import { format as formatDateFns } from 'date-fns';
 import { ArrowRight, ArrowLeft} from 'lucide-react';
 
 interface Lift {
@@ -69,7 +70,36 @@ const Logbook: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     await supabase.from('lifts').delete().eq('id', id);
-    setLifts((prev) => prev.filter((lift) => lift.id !== id));
+    setLifts((prev) => {
+      const updated = prev.filter((lift) => lift.id !== id);
+      // After updating lifts, check if selectedDate is now empty
+      const grouped = updated.reduce<Record<string, Lift[]>>((acc, lift) => {
+        const dateKey = lift.date.split('T')[0];
+        acc[dateKey] = acc[dateKey] || [];
+        acc[dateKey].push(lift);
+        return acc;
+      }, {});
+      if (selectedDate && (!grouped[selectedDate] || grouped[selectedDate].length === 0)) {
+        // Find next available date
+        const availableDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+        if (availableDates.length > 0) {
+          // Prefer previous date, then next date, then first available
+          const currentIndex = availableDates.indexOf(selectedDate);
+          let newDate = null;
+          if (currentIndex > 0) {
+            newDate = availableDates[currentIndex - 1];
+          } else if (currentIndex < availableDates.length - 1 && currentIndex !== -1) {
+            newDate = availableDates[currentIndex + 1];
+          } else {
+            newDate = availableDates[0];
+          }
+          setSelectedDate(newDate);
+        } else {
+          setSelectedDate(null);
+        }
+      }
+      return updated;
+    });
   };
 
   const handleFormSubmit = async (updatedLift: Partial<Lift>) => {
@@ -139,8 +169,8 @@ const Logbook: React.FC = () => {
 
   const handleDateSelect = (date: Date | null) => {
     if (!date) return;
-    const isoDate = date.toISOString().split('T')[0];
-    setSelectedDate(isoDate);
+    const localDate = formatDateFns(date, 'yyyy-MM-dd');
+    setSelectedDate(localDate);
   };
 
   const openNewLiftForm = () => {
