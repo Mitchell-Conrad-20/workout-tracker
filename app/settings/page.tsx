@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import AuthModal from '@/components/AuthModal';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { useRouter } from 'next/navigation';
@@ -37,8 +37,8 @@ export default function SettingsPage() {
     };
   }
 
-  // Inline debounce for username availability
-  function checkUsernameAvailability(value: string) {
+  // Debounced username availability checker
+  const checkUsernameAvailability = React.useCallback(
     debounce(async (val: string) => {
       if (!val.trim()) {
         setUsernameAvailable(null);
@@ -60,19 +60,21 @@ export default function SettingsPage() {
       } else {
         setUsernameAvailable(!data); // available if no matching user found
       }
-    }, 500)(value);
-  }
+    }, 500),
+    []
+  );
 
-  // Inline debounce for password match
-  function checkPasswordsMatch(pass: string, confirm: string) {
+  // Debounced password match checker
+  const checkPasswordsMatch = React.useCallback(
     debounce((p: string, c: string) => {
       if (!p && !c) {
         setPasswordsMatch(null);
         return;
       }
       setPasswordsMatch(p === c);
-    }, 500)(pass, confirm);
-  }
+    }, 500),
+    []
+  );
   // --- End Debounce Helpers ---
 
   useEffect(() => {
