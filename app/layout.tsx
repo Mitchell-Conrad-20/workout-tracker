@@ -15,7 +15,7 @@ import { AuthModalProvider } from '@/hooks/useAuthModal';
 // });
 
 export const metadata: Metadata = {
-  title: "Workout Tracker",
+  title: "Auralift",
   description: "a better way to track your progress",
 };
 
