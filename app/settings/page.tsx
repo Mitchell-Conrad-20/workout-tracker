@@ -37,9 +37,10 @@ export default function SettingsPage() {
     };
   }
 
-  const checkUsernameAvailability = useCallback(
-    debounce(async (value: string) => {
-      if (!value.trim()) {
+  // Inline debounce for username availability
+  function checkUsernameAvailability(value: string) {
+    debounce(async (val: string) => {
+      if (!val.trim()) {
         setUsernameAvailable(null);
         return;
       }
@@ -50,7 +51,7 @@ export default function SettingsPage() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id')
-        .eq('username', value.trim().toLowerCase())
+        .eq('username', val.trim().toLowerCase())
         .neq('id', user.id)
         .maybeSingle();
 
@@ -59,20 +60,19 @@ export default function SettingsPage() {
       } else {
         setUsernameAvailable(!data); // available if no matching user found
       }
-    }, 500),
-    [supabase]
-  );
+    }, 500)(value);
+  }
 
-  const checkPasswordsMatch = useCallback(
-    debounce((pass: string, confirm: string) => {
-      if (!pass && !confirm) {
+  // Inline debounce for password match
+  function checkPasswordsMatch(pass: string, confirm: string) {
+    debounce((p: string, c: string) => {
+      if (!p && !c) {
         setPasswordsMatch(null);
         return;
       }
-      setPasswordsMatch(pass === confirm);
-    }, 500),
-    []
-  );
+      setPasswordsMatch(p === c);
+    }, 500)(pass, confirm);
+  }
   // --- End Debounce Helpers ---
 
   useEffect(() => {
