@@ -28,13 +28,14 @@ export default function SettingsPage() {
   const { open, setOpen, isAuthenticated } = useAuthModal();
 
   // --- Debounce Helpers ---
-  const debounce = (fn: (...args: any[]) => void, delay: number) => {
+  // Generic debounce function
+  function debounce<T extends unknown[]>(fn: (...args: T) => void, delay: number) {
     let timer: NodeJS.Timeout;
-    return (...args: any[]) => {
+    return (...args: T) => {
       clearTimeout(timer);
       timer = setTimeout(() => fn(...args), delay);
     };
-  };
+  }
 
   const checkUsernameAvailability = useCallback(
     debounce(async (value: string) => {
@@ -59,7 +60,7 @@ export default function SettingsPage() {
         setUsernameAvailable(!data); // available if no matching user found
       }
     }, 500),
-    []
+    [supabase]
   );
 
   const checkPasswordsMatch = useCallback(
