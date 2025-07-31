@@ -42,7 +42,15 @@ export default function RoutinesPage() {
         .eq('user_id', user.id);
 
       if (!error && data) {
-        setRoutines(data.map(r => ({ ...r, open: false })));
+        // For each routine, fetch its lifts
+        const routinesWithLifts = await Promise.all(data.map(async r => {
+          const { data: liftsData, error: liftsError } = await supabase
+            .from('routine_lifts')
+            .select('name, sets')
+            .eq('routine_id', r.id);
+          return { ...r, lifts: Array.isArray(liftsData) ? liftsData : [], open: false };
+        }));
+        setRoutines(routinesWithLifts);
       }
     };
 
@@ -117,6 +125,12 @@ export default function RoutinesPage() {
     }
 
     routineId = existingRoutine.id;
+
+    // DELETE all lifts for this routine before re-inserting
+    await supabase
+      .from('routine_lifts')
+      .delete()
+      .eq('routine_id', routineId);
   } else {
     // INSERT new routine
     const { data: routineData, error: insertError } = await supabase
@@ -141,23 +155,33 @@ export default function RoutinesPage() {
       user_id: user.id,  // add user_id if required by your RLS
     }));
 
-    const { error: liftError } = await supabase
-      .from('routine_lifts')
-      .insert(liftRows);
+    if (liftRows.length > 0) {
+      const { error: liftError } = await supabase
+        .from('routine_lifts')
+        .insert(liftRows);
 
-    if (liftError) {
-      console.error('Error inserting lifts:', liftError);
+      if (liftError) {
+        console.error('Error inserting lifts:', liftError);
+      }
     }
   }
 
-  // Refresh UI
+  // Refresh UI and update lifts for each routine
   const { data: updated, error: loadError } = await supabase
     .from('routines')
     .select('*')
     .eq('user_id', user.id);
 
   if (!loadError && updated) {
-    setRoutines(updated.map(r => ({ ...r, open: false })));
+    // For each routine, fetch its lifts
+    const routinesWithLifts = await Promise.all(updated.map(async r => {
+      const { data: liftsData, error: liftsError } = await supabase
+        .from('routine_lifts')
+        .select('name, sets')
+        .eq('routine_id', r.id);
+      return { ...r, lifts: Array.isArray(liftsData) ? liftsData : [], open: false };
+    }));
+    setRoutines(routinesWithLifts);
   }
 
   setRoutineName('');
@@ -179,7 +203,7 @@ export default function RoutinesPage() {
           if (!error && Array.isArray(data)) {
             setLiftInputs([...data, { name: '', sets: 0 }]);
             // Update lifts in routines state for correct lift count
-            setRoutines(prev => prev.map(r => r.id === id ? { ...r, lifts: data, open: true } : r));
+            setRoutines(prev => prev.map(r => r.id === id ? { ...r, lifts: Array.isArray(data) ? data : [], open: true } : r));
           } else {
             setLiftInputs([{ name: '', sets: 0 }]);
           }
@@ -256,7 +280,9 @@ export default function RoutinesPage() {
             ) : (
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-lg">{routine.name}</span>
-                <span className="text-sm text-gray-500">{Array.isArray(routine.lifts) ? routine.lifts.filter(l => l.name && l.name.trim()).length : 0} lifts</span>
+                <span className="text-sm text-gray-500">{
+                  routine.lifts?.length != null ? routine.lifts.length : 0                  
+                } lifts</span>
                 <button
                   onClick={e => { e.stopPropagation(); handleDeleteRoutine(routine.id); }}
                   className="ml-2 text-red-400 hover:text-red-600 text-xs border border-red-200 rounded px-2 py-1"
