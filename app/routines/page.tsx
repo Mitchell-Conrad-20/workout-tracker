@@ -77,11 +77,12 @@ export default function RoutinesPage() {
 
   const handleDeleteRoutine = async (id: number) => {
     const routineToDelete = routines.find(r => r.id === id);
-    if (routineToDelete && typeof routineToDelete.id === 'number') {
+    if (routineToDelete && routineToDelete.id !== -1) {
+      // only need to delete the routine, the delete will cascade to lifts
       await supabase.from('routines').delete().eq('id', routineToDelete.id);
     }
     setRoutines(routines.filter(r => r.id !== id));
-    if (openRoutineId === id) {
+    if (openRoutineId !== null && openRoutineId === id) {
       setRoutineName('');
       setLiftInputs([{ name: '', sets: 0 }]);
       setOpenRoutineId(null);
