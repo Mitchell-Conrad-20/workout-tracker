@@ -48,7 +48,9 @@ export default function RoutinesPage() {
             .from('routine_lifts')
             .select('name, sets')
             .eq('routine_id', r.id);
-          return { ...r, lifts: Array.isArray(liftsData) ? liftsData : [], open: false };
+          // Preserve open state if this routine is currently open
+          const isOpen = openRoutineId !== null && r.id === openRoutineId;
+          return { ...r, lifts: Array.isArray(liftsData) ? liftsData : [], open: isOpen };
         }));
         setRoutines(routinesWithLifts);
       }
