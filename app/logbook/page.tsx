@@ -167,12 +167,6 @@ const Logbook: React.FC = () => {
     }
   };
 
-  const handleDateSelect = (date: Date | null) => {
-    if (!date) return;
-    const localDate = formatDateFns(date, 'yyyy-MM-dd');
-    setSelectedDate(localDate);
-  };
-
   const openNewLiftForm = () => {
     setEditingLift(null);
     setShowModal(true);
@@ -226,7 +220,7 @@ const Logbook: React.FC = () => {
             </button>
             <DatePicker
               value={selectedDate || ''}
-              onChange={(date) => handleDateSelect(date ? new Date(date) : null)}
+              onChange={(newDate) => setSelectedDate(newDate)}
               small
             />
             <button
