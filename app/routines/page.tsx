@@ -234,7 +234,8 @@ export default function RoutinesPage() {
         {routines.map(routine => (
           <div
             key={routine.id}
-            className={`border rounded-lg p-4 bg-gray-50 dark:bg-gray-900 transition-all ${routine.open ? 'shadow-lg' : 'cursor-pointer hover:border-blue-400'}`}
+            // className={`border rounded-lg p-4 bg-gray-50 dark:bg-gray-900 transition-all ${routine.open ? 'shadow-lg' : 'cursor-pointer hover:border-blue-400'}`}
+            className={`border rounded-lg p-4 bg-gray-50 dark:bg-neutral-900 transition-all ${routine.open ? 'shadow-lg' : 'cursor-pointer hover:border-blue-400'}`}
             onClick={() => !routine.open && handleOpenRoutine(routine.id)}
           >
             {routine.open ? (
@@ -278,7 +279,7 @@ export default function RoutinesPage() {
                     )}
                   </div>
                 ))}
-                <Button dark onClick={handleSaveRoutine} className="mt-2" disabled={!routineName.trim()}>Save Routine</Button>
+                <Button onClick={handleSaveRoutine} className="mt-2" disabled={!routineName.trim()}>Save Routine</Button>
               </div>
             ) : (
               <div className="flex items-center justify-between">
