@@ -26,6 +26,42 @@ export default function RoutinesPage() {
   const [liftInputs, setLiftInputs] = useState<Lift[]>([{ name: '', sets: 0 }]);
   const [openRoutineId, setOpenRoutineId] = useState<number | null>(null);
 
+  // Debounce and sanitize routineName
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (routineName !== capitalizeWords(routineName)) {
+        setRoutineName(capitalizeWords(routineName));
+      }
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [routineName]);
+
+  // Debounce and sanitize liftInputs
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const sanitized = liftInputs.map(lift => ({
+        ...lift,
+        name: capitalizeWords(lift.name)
+      }));
+      if (JSON.stringify(liftInputs) !== JSON.stringify(sanitized)) {
+        setLiftInputs(sanitized);
+      }
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [liftInputs]);
+
+  // Capitalize and sanitize words (same as LiftForm)
+  const capitalizeWords = (text: string) => {
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   useEffect(() => {
     if (!loading && !user) {
       // You can redirect or show a message here if needed
@@ -74,7 +110,7 @@ export default function RoutinesPage() {
     setRoutineName('');
     setLiftInputs([{ name: '', sets: 0 }]);
     setOpenRoutineId(-1); // just marks "new"
-};
+  };
 
 
   const handleDeleteRoutine = async (id: number) => {
@@ -108,7 +144,15 @@ export default function RoutinesPage() {
   const handleSaveRoutine = async () => {
   if (!routineName.trim() || !user) return;
 
-  const lifts = liftInputs.filter(lift => lift.name.trim());
+  // Data sanitization for lifts and routine name
+  const sanitizedRoutineName = capitalizeWords(routineName);
+  const lifts = liftInputs
+    .map(lift => ({
+      name: capitalizeWords(lift.name),
+      sets: Math.max(1, Math.floor(Number(lift.sets)))
+    }))
+    .filter(lift => lift.name.length > 0 && lift.sets > 0);
+
   if (lifts.length === 0) return;
 
   let routineId: number | null = null;
@@ -119,7 +163,7 @@ export default function RoutinesPage() {
     // UPDATE existing routine name
     const { error: updateError } = await supabase
       .from('routines')
-      .update({ name: routineName })
+      .update({ name: sanitizedRoutineName })
       .eq('id', existingRoutine.id);
 
     if (updateError) {
@@ -138,7 +182,7 @@ export default function RoutinesPage() {
     // INSERT new routine
     const { data: routineData, error: insertError } = await supabase
       .from('routines')
-      .insert([{ name: routineName, user_id: user.id }])
+      .insert([{ name: sanitizedRoutineName, user_id: user.id }])
       .select()
       .single();
 
