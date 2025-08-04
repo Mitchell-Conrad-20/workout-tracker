@@ -234,7 +234,6 @@ export default function RoutinesPage() {
         {routines.map(routine => (
           <div
             key={routine.id}
-            // className={`border rounded-lg p-4 bg-gray-50 dark:bg-gray-900 transition-all ${routine.open ? 'shadow-lg' : 'cursor-pointer hover:border-blue-400'}`}
             className={`border rounded-lg p-4 bg-gray-50 dark:bg-neutral-900 transition-all ${routine.open ? 'shadow-lg' : 'cursor-pointer hover:border-blue-400'}`}
             onClick={() => !routine.open && handleOpenRoutine(routine.id)}
           >
@@ -253,14 +252,20 @@ export default function RoutinesPage() {
                     className="ml-2 text-red-500 hover:text-red-700 text-sm border border-red-300 rounded px-2 py-1"
                   >Delete</button>
                 </div>
+
+                <div className="mt-3 border-t border-gray-300 dark:border-white/[.1] pt-3"></div>
+
                 {liftInputs.map((lift, idx) => (
-                  <div key={idx} className="flex gap-2 items-center mb-2">
+                  <div
+                    key={idx}
+                    className="grid grid-cols-[1fr_80px_32px] gap-2 items-center mb-2"
+                  >
                     <Input
                       dark
                       placeholder="Lift Name"
                       value={lift.name}
                       onChange={e => handleLiftChange(idx, 'name', e.target.value)}
-                      className="flex-1"
+                      className="w-full"
                     />
                     <Input
                       dark
@@ -269,17 +274,19 @@ export default function RoutinesPage() {
                       placeholder="Sets"
                       value={lift.sets || ''}
                       onChange={e => handleLiftChange(idx, 'sets', e.target.value)}
-                      className="w-20"
+                      className="w-full"
                     />
                     {lift.name.trim() && (
                       <button
                         onClick={() => handleDeleteLift(idx)}
-                        className="text-xs text-red-400 hover:text-red-600 ml-2"
+                        className="text-xs text-red-400 hover:text-red-600"
                       >✕</button>
                     )}
                   </div>
                 ))}
-                <Button onClick={handleSaveRoutine} className="mt-2" disabled={!routineName.trim()}>Save Routine</Button>
+                <div className='pt-2'>
+                  <Button onClick={handleSaveRoutine} disabled={!routineName.trim()}>Save Routine</Button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center justify-between">
