@@ -21,10 +21,38 @@ interface Routine {
 
 export default function RoutinesPage() {
   const { user, loading } = useUserContext();
+  // Autofill state for lift name suggestions
+  const [pastLiftNames, setPastLiftNames] = useState<string[]>([]);
+  const [showSuggestionsIdx, setShowSuggestionsIdx] = useState<number | null>(null);
+  const [highlightedIdx, setHighlightedIdx] = useState<number>(-1);
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [routineName, setRoutineName] = useState('');
   const [liftInputs, setLiftInputs] = useState<Lift[]>([{ name: '', sets: 0 }]);
   const [openRoutineId, setOpenRoutineId] = useState<number | null>(null);
+
+  // Fetch user's past lift names for autofill
+  useEffect(() => {
+    const fetchPastLiftNames = async () => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('lifts')
+        .select('name')
+        .eq('user_id', user.id);
+      if (!error && data) {
+        const uniqueNames = Array.from(new Set(data.map((l: any) => l.name)));
+        setPastLiftNames(uniqueNames);
+      }
+    };
+    fetchPastLiftNames();
+  }, [user]);
+
+  // Get filtered suggestions for a lift input
+  const getFilteredSuggestions = (input: string) => {
+    if (!input) return [];
+    return pastLiftNames
+      .filter((name) => name.toLowerCase().startsWith(input.toLowerCase()))
+      .slice(0, 5);
+  };
 
   // Debounce and sanitize routineName
   useEffect(() => {
@@ -136,6 +164,10 @@ export default function RoutinesPage() {
       i === idx ? { ...lift, [field]: field === 'sets' ? Number(value) : value } : lift
     );
     setLiftInputs(updated);
+    if (field === 'name') {
+      setShowSuggestionsIdx(idx);
+      setHighlightedIdx(-1);
+    }
     if (field === 'name' && value && idx === liftInputs.length - 1) {
       setLiftInputs([...updated, { name: '', sets: 0 }]);
     }
@@ -302,15 +334,53 @@ export default function RoutinesPage() {
                 {liftInputs.map((lift, idx) => (
                   <div
                     key={idx}
-                    className="grid grid-cols-[1fr_80px_32px] gap-2 items-center mb-2"
+                    className="grid grid-cols-[1fr_80px_32px] gap-2 items-center mb-2 relative"
                   >
-                    <Input
-                      dark
-                      placeholder="Lift Name"
-                      value={lift.name}
-                      onChange={e => handleLiftChange(idx, 'name', e.target.value)}
-                      className="w-full"
-                    />
+                    <div className="relative">
+                      <Input
+                        dark
+                        placeholder="Lift Name"
+                        value={lift.name}
+                        onChange={e => handleLiftChange(idx, 'name', e.target.value)}
+                        onFocus={() => { setShowSuggestionsIdx(idx); setHighlightedIdx(-1); }}
+                        onBlur={() => setTimeout(() => setShowSuggestionsIdx(null), 150)}
+                        onKeyDown={e => {
+                          const suggestions = getFilteredSuggestions(lift.name);
+                          if (!suggestions.length || showSuggestionsIdx !== idx) return;
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setHighlightedIdx(prev => prev < suggestions.length - 1 ? prev + 1 : 0);
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setHighlightedIdx(prev => prev > 0 ? prev - 1 : suggestions.length - 1);
+                          } else if (e.key === 'Enter' && highlightedIdx >= 0) {
+                            e.preventDefault();
+                            const selected = suggestions[highlightedIdx];
+                            handleLiftChange(idx, 'name', selected);
+                            setShowSuggestionsIdx(null);
+                          } else if (e.key === 'Escape') {
+                            setShowSuggestionsIdx(null);
+                          }
+                        }}
+                        className="w-full"
+                      />
+                      {showSuggestionsIdx === idx && getFilteredSuggestions(lift.name).length > 0 && (
+                        <ul className="absolute z-10 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-md mt-1 w-full max-h-40 overflow-y-auto shadow-lg">
+                          {getFilteredSuggestions(lift.name).map((suggestion, sIdx) => (
+                            <li
+                              key={suggestion}
+                              className={`px-3 py-2 cursor-pointer ${highlightedIdx === sIdx ? 'bg-gray-200 dark:bg-neutral-700' : 'hover:bg-gray-100 dark:hover:bg-neutral-700'}`}
+                              onMouseDown={() => {
+                                handleLiftChange(idx, 'name', suggestion);
+                                setShowSuggestionsIdx(null);
+                              }}
+                            >
+                              {suggestion}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                     <Input
                       dark
                       type="number"
