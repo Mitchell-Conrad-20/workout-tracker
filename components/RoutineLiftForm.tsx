@@ -90,19 +90,6 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess }) => {
       });
   }, [selectedRoutineId]);
 
-  // Debug: log render state
-  React.useEffect(() => {
-    console.log('Render state:', {
-      user,
-      routines,
-      selectedRoutineId,
-      routineLifts,
-      setEntries,
-      loading,
-      errorMsg
-    });
-  });
-
   // Handle input change
   const handleSetChange = (idx: number, field: 'weight' | 'reps', value: string) => {
     setSetEntries(prev => prev.map((entry, i) =>
@@ -168,30 +155,72 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess }) => {
       {loading && <div className="text-blue-500 mb-2">Loading lifts...</div>}
       {errorMsg && <div className="text-red-500 mb-2">{errorMsg}</div>}
       {setEntries.length > 0 && (
-        <div className="space-y-3">
-          {setEntries.map((entry, idx) => (
-            <div key={idx} className="flex gap-2 items-center">
-              <span className="w-40">{entry.liftName}</span>
-              <input
-                type="number"
-                placeholder="Weight"
-                value={entry.weight}
-                onChange={e => handleSetChange(idx, 'weight', e.target.value)}
-                className="w-24 px-2 py-1 border rounded dark:bg-neutral-900 dark:border-neutral-700"
-              />
-              <input
-                type="number"
-                placeholder="Reps"
-                value={entry.reps}
-                onChange={e => handleSetChange(idx, 'reps', e.target.value)}
-                className="w-24 px-2 py-1 border rounded dark:bg-neutral-900 dark:border-neutral-700"
-              />
-              <span className="text-xs text-gray-400">Set {entry.setIdx}</span>
-            </div>
-          ))}
+        <div className="space-y-6">
+          {/* Group sets by liftName */}
+          {Array.from(new Set(setEntries.map(e => e.liftName))).map(liftName => {
+            const liftSets = setEntries
+              .map((entry, idx) => ({ ...entry, idx }))
+              .filter(e => e.liftName === liftName);
+            return (
+              <div key={liftName} className="">
+                <div className="flex items-center mb-2">
+                  <span className="font-semibold w-40">{liftName}</span>
+                  <button
+                    type="button"
+                    className="ml-2 text-blue-500 hover:text-blue-700 text-lg"
+                    onClick={() => {
+                      // Add a new set for this lift
+                      setSetEntries(prev => [
+                        ...prev,
+                        {
+                          liftName,
+                          setIdx: liftSets.length + 1,
+                          weight: '',
+                          reps: ''
+                        }
+                      ]);
+                    }}
+                    aria-label="Add set"
+                  >
+                    ▼
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {liftSets.map(({ idx, weight, reps }, i) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <input
+                        type="number"
+                        placeholder="Weight"
+                        value={weight}
+                        onChange={e => handleSetChange(idx, 'weight', e.target.value)}
+                        className="w-24 px-2 py-1 border rounded dark:bg-neutral-900 dark:border-neutral-700"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Reps"
+                        value={reps}
+                        onChange={e => handleSetChange(idx, 'reps', e.target.value)}
+                        className="w-24 px-2 py-1 border rounded dark:bg-neutral-900 dark:border-neutral-700"
+                      />
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700 text-lg ml-2"
+                        onClick={() => {
+                          setSetEntries(prev => prev.filter((_, j) => j !== idx));
+                        }}
+                        aria-label="Remove set"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
           <button
             onClick={handleSubmit}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-4"
             disabled={loading}
           >
             Submit All Lifts
@@ -202,11 +231,7 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess }) => {
         <div className="text-yellow-600 mb-2">No sets found for this routine. Please check the routine's lifts and set counts.</div>
       )}
       {/* Fallback: show raw data if nothing is working */}
-      {selectedRoutineId && !loading && routines.length > 0 && (
-        <pre className="text-xs text-gray-400 bg-gray-100 dark:bg-neutral-800 p-2 mt-2 rounded">
-          Debug info:{'\n'}{JSON.stringify({ routines, selectedRoutineId, routineLifts, setEntries, errorMsg }, null, 2)}
-        </pre>
-      )}
+      {/* Debug info removed */}
     </div>
   );
 };
