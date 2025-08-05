@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Button from '@/components/Button';
 import supabase from '@/lib/supabase';
 import { useUserContext } from '@/context/UserContext';
 
@@ -155,7 +156,7 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess }) => {
       {loading && <div className="text-blue-500 mb-2">Loading lifts...</div>}
       {errorMsg && <div className="text-red-500 mb-2">{errorMsg}</div>}
       {setEntries.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-6 w-full flex flex-col items-center">
           {/* Group sets by liftName */}
           {Array.from(new Set(setEntries.map(e => e.liftName))).map(liftName => {
             const liftSets = setEntries
@@ -163,13 +164,45 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess }) => {
               .filter(e => e.liftName === liftName);
             return (
               <div key={liftName} className="">
-                <div className="flex items-center mb-2">
-                  <span className="font-semibold w-40">{liftName}</span>
+                <div className="flex items-center mb-2 w-full justify-center">
+                  <span className="font-semibold text-lg text-center w-full">{liftName}</span>
+                </div>
+                <div className="space-y-2 w-full flex flex-col items-center">
+                  {liftSets.map(({ idx, weight, reps }, i) => (
+                    <div key={idx} className="flex gap-2 items-center w-full justify-center">
+                      <input
+                        type="number"
+                        placeholder="Weight"
+                        value={weight}
+                        onChange={e => handleSetChange(idx, 'weight', e.target.value)}
+                        className="w-32 px-2 py-1 border rounded dark:bg-neutral-900 dark:border-neutral-700 text-center"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Reps"
+                        value={reps}
+                        onChange={e => handleSetChange(idx, 'reps', e.target.value)}
+                        className="w-32 px-2 py-1 border rounded dark:bg-neutral-900 dark:border-neutral-700 text-center"
+                      />
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700 text-lg ml-2"
+                        onClick={() => {
+                          setSetEntries(prev => prev.filter((_, j) => j !== idx));
+                        }}
+                        aria-label="Remove set"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-center mt-2 w-full">
                   <button
                     type="button"
-                    className="ml-2 text-blue-500 hover:text-blue-700 text-lg"
+                    className="text-gray-400 hover:text-gray-600 text-base p-0 m-0 bg-transparent border-none"
+                    style={{ fontSize: '1.1rem', lineHeight: '1', background: 'none', border: 'none' }}
                     onClick={() => {
-                      // Add a new set for this lift
                       setSetEntries(prev => [
                         ...prev,
                         {
@@ -185,46 +218,14 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess }) => {
                     ▼
                   </button>
                 </div>
-                <div className="space-y-2">
-                  {liftSets.map(({ idx, weight, reps }, i) => (
-                    <div key={idx} className="flex gap-2 items-center">
-                      <input
-                        type="number"
-                        placeholder="Weight"
-                        value={weight}
-                        onChange={e => handleSetChange(idx, 'weight', e.target.value)}
-                        className="w-24 px-2 py-1 border rounded dark:bg-neutral-900 dark:border-neutral-700"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Reps"
-                        value={reps}
-                        onChange={e => handleSetChange(idx, 'reps', e.target.value)}
-                        className="w-24 px-2 py-1 border rounded dark:bg-neutral-900 dark:border-neutral-700"
-                      />
-                      <button
-                        type="button"
-                        className="text-red-500 hover:text-red-700 text-lg ml-2"
-                        onClick={() => {
-                          setSetEntries(prev => prev.filter((_, j) => j !== idx));
-                        }}
-                        aria-label="Remove set"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
               </div>
             );
           })}
-          <button
-            onClick={handleSubmit}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-4"
-            disabled={loading}
-          >
-            Submit All Lifts
-          </button>
+          <div className="mt-6">
+            <Button onClick={handleSubmit} disabled={loading}>
+              Submit All Lifts
+            </Button>
+          </div>
         </div>
       )}
       {selectedRoutineId && !loading && setEntries.length === 0 && !errorMsg && (
