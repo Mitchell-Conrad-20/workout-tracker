@@ -11,6 +11,7 @@ import { useAuthModal } from '@/hooks/useAuthModal';
 import { format, parseISO } from 'date-fns';
 import { format as formatDateFns } from 'date-fns';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 interface Lift {
   id: number;
@@ -22,6 +23,7 @@ interface Lift {
 }
 
 const Logbook: React.FC = () => {
+  // No need for showRoutineForm state
   const { open, setOpen, isAuthenticated } = useAuthModal();
   const [lifts, setLifts] = useState<Lift[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -163,12 +165,6 @@ const Logbook: React.FC = () => {
     }
   };
 
-  const handleDateSelect = (date: Date | null) => {
-    if (!date) return;
-    const localDate = formatDateFns(date, 'yyyy-MM-dd');
-    setSelectedDate(localDate);
-  };
-
   const openNewLiftForm = () => {
     setEditingLift(null);
     setShowModal(true);
@@ -199,12 +195,21 @@ const Logbook: React.FC = () => {
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">Your Logbook</h1>
-            <button
-              onClick={openNewLiftForm}
-              className="mr-15 md:mr-0 p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
-            >
-              +
-            </button>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={openNewLiftForm}
+                className="p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+              >
+                +
+              </button>
+              <Link
+                href="/log-routine"
+                className="p-1 mr-15 md:mr-0 sm:mr-2 cursor-pointer rounded-full w-10 h-10 text-2xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+                title="Log a Routine"
+              >
+                🏋️
+              </Link>
+            </div>
           </div>
 
           {/* Date Picker */}
@@ -222,7 +227,7 @@ const Logbook: React.FC = () => {
             </button>
             <DatePicker
               value={selectedDate || ''}
-              onChange={(date) => handleDateSelect(date ? new Date(date) : null)}
+              onChange={(newDate) => setSelectedDate(newDate)}
               small
             />
             <button
@@ -283,10 +288,7 @@ const Logbook: React.FC = () => {
           )}
 
           {/* Routine Lift Form Section */}
-          <div className="mt-8 bg-white dark:bg-neutral-900 p-4 rounded shadow">
-            <h2 className="text-xl font-semibold mb-4">Log a Workout from a Routine</h2>
-            <RoutineLiftForm onSubmitSuccess={fetchLifts} />
-          </div>
+          {/* RoutineLiftForm is now on its own page */}
 
           {/* Add/Edit Modal */}
           <Modal open={showModal} onClose={() => setShowModal(false)}>

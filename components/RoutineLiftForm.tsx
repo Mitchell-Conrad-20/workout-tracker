@@ -24,9 +24,10 @@ interface SetEntry {
 
 interface Props {
   onSubmitSuccess?: () => void;
+  selectedDate?: string;
 }
 
-const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess }) => {
+const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess, selectedDate }) => {
   const { user } = useUserContext();
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(null);
@@ -108,12 +109,12 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess }) => {
       return;
     }
     setLoading(true);
-    const today = new Date().toISOString().split('T')[0];
+    const dateToUse = selectedDate || new Date().toISOString().split('T')[0];
     const liftsToInsert = setEntries.map(e => ({
       name: e.liftName,
       weight: Number(e.weight),
       reps: Number(e.reps),
-      date: today,
+      date: dateToUse,
       user_id: user.id,
     }));
     const { error } = await supabase.from('lifts').insert(liftsToInsert);
