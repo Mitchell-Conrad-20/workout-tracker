@@ -12,6 +12,7 @@ import supabase from '@/lib/supabase';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { Session } from '@supabase/supabase-js';
 import { Lift } from '@/types/lift';
+import Link from 'next/link';
 
 export default function Home() {
   // lifts state removed
@@ -129,12 +130,21 @@ export default function Home() {
             Auralift
           </h1>
           {session && (
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="p-1 mr-15 md:mr-0 sm:mr-2 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
-            >
-              +
-            </button>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+              >
+                +
+              </button>
+              <Link
+                href="/log-routine"
+                className="p-1 mr-15 md:mr-0 sm:mr-2 cursor-pointer rounded-full w-10 h-10 text-2xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+                title="Log a Routine"
+              >
+                🏋️
+              </Link>
+            </div>
           )}
         </div>
 

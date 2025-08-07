@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
@@ -9,7 +8,8 @@ import DatePicker from '@/components/DatePicker';
 import AuthModal from '@/components/AuthModal';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { format, parseISO } from 'date-fns';
-import { ArrowRight, ArrowLeft} from 'lucide-react';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 interface Lift {
   id: number;
@@ -21,34 +21,36 @@ interface Lift {
 }
 
 const Logbook: React.FC = () => {
-  // Auth modal state
+  // No need for showRoutineForm state
   const { open, setOpen, isAuthenticated } = useAuthModal();
   const [lifts, setLifts] = useState<Lift[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingLift, setEditingLift] = useState<Lift | null>(null);
   const [showModal, setShowModal] = useState(false);
 
+  // Fetch lifts on mount
+  const fetchLifts = async () => {
+    const { data, error } = await supabase
+      .from('lifts')
+      .select('*')
+      .order('date', { ascending: false });
+
+    if (!error && data) {
+      setLifts(data);
+
+      // Default to latest date
+      const latest = data[0]?.date?.split('T')[0];
+      if (latest) setSelectedDate(latest);
+    } else {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
-    const fetchLifts = async () => {
-      const { data, error } = await supabase
-        .from('lifts')
-        .select('*')
-        .order('date', { ascending: false });
-
-      if (!error && data) {
-        setLifts(data);
-
-        // Default to latest date
-        const latest = data[0]?.date?.split('T')[0];
-        if (latest) setSelectedDate(latest);
-      } else {
-        console.error(error);
-      }
-    };
-
     fetchLifts();
   }, []);
 
+  // Group lifts by date
   const groupedLifts = useMemo(
     () =>
       lifts.reduce<Record<string, Lift[]>>((acc, lift) => {
@@ -71,7 +73,6 @@ const Logbook: React.FC = () => {
     await supabase.from('lifts').delete().eq('id', id);
     setLifts((prev) => {
       const updated = prev.filter((lift) => lift.id !== id);
-      // After updating lifts, check if selectedDate is now empty
       const grouped = updated.reduce<Record<string, Lift[]>>((acc, lift) => {
         const dateKey = lift.date.split('T')[0];
         acc[dateKey] = acc[dateKey] || [];
@@ -79,10 +80,8 @@ const Logbook: React.FC = () => {
         return acc;
       }, {});
       if (selectedDate && (!grouped[selectedDate] || grouped[selectedDate].length === 0)) {
-        // Find next available date
         const availableDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
         if (availableDates.length > 0) {
-          // Prefer previous date, then next date, then first available
           const currentIndex = availableDates.indexOf(selectedDate);
           let newDate = null;
           if (currentIndex > 0) {
@@ -104,7 +103,6 @@ const Logbook: React.FC = () => {
   const handleFormSubmit = async (updatedLift: Partial<Lift>) => {
     try {
       if (updatedLift.id) {
-        // Editing existing lift
         const { data, error } = await supabase
           .from('lifts')
           .update({
@@ -127,7 +125,6 @@ const Logbook: React.FC = () => {
           );
         }
       } else {
-        // Creating new lift (must include user_id)
         const {
           data: { user },
           error: userError,
@@ -175,11 +172,10 @@ const Logbook: React.FC = () => {
   const prevDate = currentIndex > 0 ? dates[currentIndex - 1] : null;
   const nextDate = currentIndex >= 0 && currentIndex < dates.length - 1 ? dates[currentIndex + 1] : null;
 
-  const currentLifts = React.useMemo(() => (
+  const currentLifts = useMemo(() => (
     selectedDate ? groupedLifts[selectedDate] || [] : []
   ), [selectedDate, groupedLifts]);
 
-  // Group current lifts by exercise name
   const groupedByExercise = useMemo(() => {
     const grouped: Record<string, Lift[]> = {};
     currentLifts.forEach((lift) => {
@@ -194,24 +190,34 @@ const Logbook: React.FC = () => {
       <AuthModal open={open} onClose={() => setOpen(false)} />
       {isAuthenticated ? (
         <>
+          {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">Your Logbook</h1>
-            <button
-              onClick={openNewLiftForm}
-              className="mr-15 md:mr-0 p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
-            >
-              +
-            </button>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={openNewLiftForm}
+                className="p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+              >
+                +
+              </button>
+              <Link
+                href="/log-routine"
+                className="p-1 mr-15 md:mr-0 sm:mr-2 cursor-pointer rounded-full w-10 h-10 text-2xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+                title="Log a Routine"
+              >
+                🏋️
+              </Link>
+            </div>
           </div>
 
-          {/* Calendar-style date picker with arrows */}
+          {/* Date Picker */}
           <div className="flex items-center justify-center gap-3 mb-6">
             <button
               onClick={() => nextDate && setSelectedDate(nextDate)}
               disabled={!nextDate}
               className={`w-12 h-10 flex items-center justify-center rounded-full text-lg transition-colors ${
                 nextDate
-                  ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 hover:border-blue-400 dark:hover:border-blue-500'
+                  ? 'cursor-pointer bg-gray-200 hover:bg-gray-300 dark:bg-neutral-800 dark:hover:bg-neutral-700'
                   : 'bg-gray-100 text-gray-400 dark:bg-neutral-800 dark:text-neutral-600 cursor-not-allowed'
               }`}
             >
@@ -235,33 +241,24 @@ const Logbook: React.FC = () => {
             </button>
           </div>
 
-          {/* Display "page" */}
+          {/* Logbook Display */}
           {selectedDate && currentLifts.length > 0 ? (
             <div className="bg-white dark:bg-neutral-900 p-4 rounded shadow">
               <h2 className="text-xl font-semibold mb-4">
                 {format(parseISO(selectedDate), 'MMMM d, yyyy')}
               </h2>
-              {/* Display lifts in sorted groups of sorted data */}
               {Object.entries(groupedByExercise)
-                .sort(([a], [b]) => a.localeCompare(b)) // Alphabetize exercises
+                .sort(([a], [b]) => a.localeCompare(b))
                 .map(([exerciseName, sets]) => (
-                  <div
-                    key={exerciseName}
-                    className="mb-4 p-3 border rounded dark:border-neutral-700"
-                  >
+                  <div key={exerciseName} className="mb-4 p-3 border rounded dark:border-neutral-700">
                     <p className="font-medium mb-2">{exerciseName}</p>
                     <div className="space-y-1">
                       {sets
-                        .slice() // Copy to avoid mutating state
-                        .sort((a, b) => b.weight - a.weight) // Heaviest first
+                        .slice()
+                        .sort((a, b) => b.weight - a.weight)
                         .map((set) => (
-                          <div
-                            key={set.id}
-                            className="flex justify-between items-center"
-                          >
-                            <p>
-                              {set.weight} lbs × {set.reps} reps
-                            </p>
+                          <div key={set.id} className="flex justify-between items-center">
+                            <p>{set.weight} lbs × {set.reps} reps</p>
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleEdit(set)}
@@ -284,11 +281,12 @@ const Logbook: React.FC = () => {
             </div>
           ) : (
             <div className="text-neutral-500">
-              {selectedDate
-                ? 'No lifts recorded on this date.'
-                : 'Select a date to view your lifts.'}
+              {selectedDate ? 'No lifts recorded on this date.' : 'Select a date to view your lifts.'}
             </div>
           )}
+
+          {/* Routine Lift Form Section */}
+          {/* RoutineLiftForm is now on its own page */}
 
           {/* Add/Edit Modal */}
           <Modal open={showModal} onClose={() => setShowModal(false)}>

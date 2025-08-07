@@ -89,7 +89,7 @@ const Chart: React.FC<ChartProps> = ({ data, defaultMetric }) => {
   if (!mounted) return null;
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-4">
+    <div className="w-full max-w-4xl mx-auto space-y-4 pr-5">
       <div className="h-[400px] w-full">
         <ResponsiveContainer width="99%" height="100%">
           <LineChart data={unifiedData}>
