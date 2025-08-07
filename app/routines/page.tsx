@@ -39,7 +39,7 @@ export default function RoutinesPage() {
         .select('name')
         .eq('user_id', user.id);
       if (!error && data) {
-        const uniqueNames = Array.from(new Set(data.map((l: any) => l.name)));
+        const uniqueNames = Array.from(new Set(data.map((l: { name: string }) => l.name)));
         setPastLiftNames(uniqueNames);
       }
     };
@@ -108,7 +108,7 @@ export default function RoutinesPage() {
       if (!error && data) {
         // For each routine, fetch its lifts
         const routinesWithLifts = await Promise.all(data.map(async r => {
-          const { data: liftsData, error: liftsError } = await supabase
+          const { data: liftsData } = await supabase
             .from('routine_lifts')
             .select('name, sets')
             .eq('routine_id', r.id);
@@ -121,7 +121,7 @@ export default function RoutinesPage() {
     };
 
     fetchRoutines();
-  }, [user]);
+  }, [user, openRoutineId]);
 
   const handleAddRoutine = () => {
     if (openRoutineId !== null) return;
@@ -254,7 +254,7 @@ export default function RoutinesPage() {
   if (!loadError && updated) {
     // For each routine, fetch its lifts
     const routinesWithLifts = await Promise.all(updated.map(async r => {
-      const { data: liftsData, error: liftsError } = await supabase
+      const { data: liftsData } = await supabase
         .from('routine_lifts')
         .select('name, sets')
         .eq('routine_id', r.id);
