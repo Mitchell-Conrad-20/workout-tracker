@@ -121,7 +121,7 @@ export default function RoutinesPage() {
     };
 
     fetchRoutines();
-  }, [user, openRoutineId]);
+  }, [user]);
 
   const handleAddRoutine = () => {
     if (openRoutineId !== null) return;
