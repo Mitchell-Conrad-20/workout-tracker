@@ -16,7 +16,7 @@ export default function LogRoutinePage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Your Logbook</h1>
         <button
-          className="text-gray-400 hover:text-gray-700 text-2xl p-1 flex items-center"
+          className="mr-15 md:mr-0 sm:mr-2 text-gray-400 hover:text-gray-700 text-2xl p-1 flex items-center"
           onClick={() => router.back()}
           aria-label="Back"
         >
