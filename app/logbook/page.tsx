@@ -6,10 +6,8 @@ import Modal from '@/components/Modal';
 import LiftForm from '@/components/LiftForm';
 import DatePicker from '@/components/DatePicker';
 import AuthModal from '@/components/AuthModal';
-import RoutineLiftForm from '@/components/RoutineLiftForm';
 import { useAuthModal } from '@/hooks/useAuthModal';
 import { format, parseISO } from 'date-fns';
-import { format as formatDateFns } from 'date-fns';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 

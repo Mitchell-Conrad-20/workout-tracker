@@ -31,7 +31,6 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess, selectedDate }) => 
   const { user } = useUserContext();
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(null);
-  const [routineLifts, setRoutineLifts] = useState<RoutineLift[]>([]);
   const [setEntries, setSetEntries] = useState<SetEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -52,7 +51,6 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess, selectedDate }) => 
   // Fetch lifts for selected routine
   useEffect(() => {
     if (!selectedRoutineId) {
-      setRoutineLifts([]);
       setSetEntries([]);
       return;
     }
@@ -67,18 +65,15 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess, selectedDate }) => 
         console.log('Fetched routine_lifts:', data, 'Error:', error);
         if (error) {
           setErrorMsg('Error loading lifts for routine.');
-          setRoutineLifts([]);
           setSetEntries([]);
           return;
         }
         if (!data || data.length === 0) {
           setErrorMsg('No lifts found for this routine.');
-          setRoutineLifts([]);
           setSetEntries([]);
           return;
         }
         setErrorMsg(null);
-        setRoutineLifts(data);
         // Build set entries grid
         const entries: SetEntry[] = [];
         data.forEach(lift => {
@@ -125,7 +120,6 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess, selectedDate }) => 
       setErrorMsg(null);
       if (onSubmitSuccess) onSubmitSuccess();
       setSelectedRoutineId(null);
-      setRoutineLifts([]);
       setSetEntries([]);
     }
   };
@@ -140,7 +134,6 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess, selectedDate }) => 
           console.log('Routine dropdown selected value:', val);
           if (val === '') {
             setSelectedRoutineId(null);
-            setRoutineLifts([]);
             setSetEntries([]);
           } else {
             console.log('Setting selectedRoutineId:', val);
