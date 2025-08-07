@@ -157,7 +157,7 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess, selectedDate }) => 
                   <span className="font-semibold text-lg text-center w-full">{liftName}</span>
                 </div>
                 <div className="space-y-2 w-full flex flex-col items-center">
-                  {liftSets.map(({ idx, weight, reps }, i) => (
+                  {liftSets.map(({ idx, weight, reps }) => (
                     <div key={idx} className="flex gap-2 items-center w-full justify-center">
                       <input
                         type="number"
@@ -218,7 +218,7 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess, selectedDate }) => 
         </div>
       )}
       {selectedRoutineId && !loading && setEntries.length === 0 && !errorMsg && (
-        <div className="text-yellow-600 mb-2">No sets found for this routine. Please check the routine's lifts and set counts.</div>
+        <div className="text-yellow-600 mb-2">No sets found for this routine. Please check the routine&apos;s lifts and set counts.</div>
       )}
       {/* Fallback: show raw data if nothing is working */}
       {/* Debug info removed */}
