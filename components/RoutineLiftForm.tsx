@@ -10,11 +10,6 @@ interface Routine {
   name: string;
 }
 
-interface RoutineLift {
-  name: string;
-  sets: number;
-}
-
 interface SetEntry {
   liftName: string;
   setIdx: number;
