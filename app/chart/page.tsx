@@ -161,18 +161,21 @@ export default function Home() {
   // Chart data for avgVol
   const chartData = React.useMemo(() => {
     if (metric !== 'avgVol') return filteredData;
+    // Group by date and lift name
     const grouped: Record<string, Lift[]> = {};
     filteredData.forEach((lift: Lift) => {
-      const key = lift.date;
+      const key = `${lift.date}__${lift.name}`;
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(lift);
     });
-    return Object.entries(grouped).map(([date, lifts]) => {
+    return Object.entries(grouped).map(([key, lifts]) => {
+      const [date, name] = key.split('__');
       const totalVol = lifts.reduce((sum, l) => sum + l.weight * l.reps, 0);
       const avgVol = lifts.length > 0 ? Math.round(totalVol / lifts.length) : 0;
       return {
         ...lifts[0],
         date,
+        name,
         value: avgVol,
         avgVol,
       };
