@@ -75,7 +75,9 @@ export default function Home() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<[string, string]>(['', '']);
 
-  const [metric, setMetric] = useState<'weight' | 'reps' | 'volume' | 'avgVol'>('weight');
+  // Use display labels for metric state
+  type MetricLabel = 'Weight' | 'Reps' | 'Tot Vol' | 'Avg Vol';
+  const [metric, setMetric] = useState<MetricLabel>('Weight');
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
@@ -160,7 +162,7 @@ export default function Home() {
 
   // Chart data for avgVol
   const chartData = React.useMemo(() => {
-    if (metric !== 'avgVol') return filteredData;
+    if (metric !== 'Avg Vol') return filteredData;
     // Group by date and lift name
     const grouped: Record<string, Lift[]> = {};
     filteredData.forEach((lift: Lift) => {
@@ -234,8 +236,17 @@ export default function Home() {
 
               {loading ? (
                 <p className="text-gray-500">Loading chart...</p>
-              ) : (metric === 'avgVol' ? chartData.length > 0 : filteredData.length > 0) ? (
-                <Chart data={metric === 'avgVol' ? chartData : filteredData} defaultMetric={metric === 'avgVol' ? 'volume' : metric} />
+              ) : (metric === 'Avg Vol' ? chartData.length > 0 : filteredData.length > 0) ? (
+                <Chart
+                  data={metric === 'Avg Vol' ? chartData : filteredData}
+                  defaultMetric={
+                    metric === 'Weight' ? 'weight' :
+                    metric === 'Reps' ? 'reps' :
+                    metric === 'Tot Vol' ? 'volume' :
+                    metric === 'Avg Vol' ? 'volume' :
+                    'weight'
+                  }
+                />
               ) : (
                 <p className="text-gray-400 mt-4">no data for selected filters</p>
               )}
@@ -341,9 +352,9 @@ export default function Home() {
                     <div className="mt-4">
                       <label className="text-sm font-medium mb-2 block">Metric</label>
                       <Toggle
-                        options={['weight', 'reps', 'volume', 'avgVol']}
+                        options={['Weight', 'Reps', 'Tot Vol', 'Avg Vol']}
                         selected={metric}
-                        onSelect={(val) => setMetric(val as 'weight' | 'reps' | 'volume' | 'avgVol')}
+                        onSelect={(val) => setMetric(val as MetricLabel)}
                       />
                     </div>
                   </div>
