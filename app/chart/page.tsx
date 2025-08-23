@@ -18,6 +18,28 @@ import DatePicker from '@/components/DatePicker';
 import Link from 'next/link';
 
 export default function Home() {
+  // Track focus for routine search
+  const [routineSearchFocused, setRoutineSearchFocused] = useState(false);
+  // Routine filter state
+  const [routines, setRoutines] = useState<{ id: string; name: string }[]>([]);
+  const [routineSearch, setRoutineSearch] = useState('');
+  const [selectedRoutine, setSelectedRoutine] = useState<{ id: string; name: string } | null>(null);
+  const [routineLifts, setRoutineLifts] = useState<{ name: string }[]>([]);
+
+  // Fetch routine lifts when selectedRoutine changes
+  useEffect(() => {
+    if (!selectedRoutine) {
+      setRoutineLifts([]);
+      return;
+    }
+    supabase
+      .from('routine_lifts')
+      .select('name')
+      .eq('routine_id', selectedRoutine.id)
+      .then(({ data, error }) => {
+        if (!error && data) setRoutineLifts(data);
+      });
+  }, [selectedRoutine]);
   // Autocomplete state for filter modal lift search
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -67,6 +89,18 @@ export default function Home() {
   const [liftSearch, setLiftSearch] = useState('');
   const { open, setOpen, isAuthenticated } = useAuthModal();
   const [session, setSession] = useState<Session | null>(null);
+
+  // Fetch routines for the user (must be after session is declared)
+  useEffect(() => {
+    if (!session?.user) return;
+    supabase
+      .from('routines')
+      .select('id, name')
+      .eq('user_id', session.user.id)
+      .then(({ data, error }) => {
+        if (!error && data) setRoutines(data);
+      });
+  }, [session]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [liftData, setLiftData] = useState<Lift[]>([]);
@@ -151,14 +185,19 @@ export default function Home() {
       !selectedLifts.includes(name)
   );
 
-  // Filtered data for chart (by selected lifts and date range)
+  // Filtered data for chart (by selected lifts, date range, and routine)
   const filteredData = React.useMemo(() => {
-    return liftData.filter((lift) => {
+    let data = liftData;
+    if (selectedRoutine && routineLifts.length > 0) {
+      const routineLiftNames = routineLifts.map(l => l.name);
+      data = data.filter(lift => routineLiftNames.includes(lift.name));
+    }
+    return data.filter((lift) => {
       const isTypeSelected = selectedLifts.length === 0 || selectedLifts.includes(lift.name);
       const isInDateRange = (!dateRange[0] || lift.date >= dateRange[0]) && (!dateRange[1] || lift.date <= dateRange[1]);
       return isTypeSelected && isInDateRange;
     });
-  }, [liftData, selectedLifts, dateRange]);
+  }, [liftData, selectedLifts, dateRange, selectedRoutine, routineLifts]);
 
   // Chart data for avgVol
   const chartData = React.useMemo(() => {
@@ -224,12 +263,12 @@ export default function Home() {
                   onClick={() => setIsFilterModalOpen(true)}
                   className="w-full md:w-auto"
                 >
-                  filter lifts
+                  Filter Lifts
                 </Button>
 
                 {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
                   <Button onClick={handleClearFilters} >
-                    clear filters
+                    Clear Filters
                   </Button>
                 )}
               </div>
@@ -269,6 +308,51 @@ export default function Home() {
                 >
                   <h2 className="text-xl font-semibold mb-4">Filter Lifts</h2>
                   <div className="flex flex-col gap-2 mb-4">
+                    {/* Routine filter */}
+                    <div className="mb-2">
+                      <label className="text-sm font-medium mb-2 block">Filter by Routine</label>
+                      <div className="relative w-full">
+                        <Input
+                          dark
+                          type="text"
+                          placeholder="Search routines..."
+                          value={routineSearch}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoutineSearch(e.target.value)}
+                          onFocus={() => setRoutineSearchFocused(true)}
+                          onBlur={() => setTimeout(() => setRoutineSearchFocused(false), 100)}
+                          className="w-full mb-2"
+                        />
+                        {routineSearchFocused && (
+                          <ul className="absolute z-10 w-full max-h-32 overflow-y-auto bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded shadow-lg">
+                            {routines.filter(r => r.name.toLowerCase().includes(routineSearch.toLowerCase())).map(routine => (
+                              <li
+                                key={routine.id}
+                                className={`px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 ${selectedRoutine?.id === routine.id ? 'bg-gray-200 dark:bg-neutral-700' : ''}`}
+                                onMouseDown={() => setSelectedRoutine(routine)}
+                              >
+                                {routine.name}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      {selectedRoutine && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1 bg-gray-200 dark:bg-neutral-800 rounded px-2 py-1">
+                            <span>{selectedRoutine.name}</span>
+                            <button
+                              type="button"
+                              className="text-red-500 hover:text-red-700 ml-1"
+                              onClick={() => setSelectedRoutine(null)}
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Lift search and selection */}
+                    <label className="text-sm font-medium mb-2 block">Filter by Lift</label>
                     <div className="flex gap-2 mb-2">
                       <div className="relative w-full">
                         <Input
@@ -304,19 +388,6 @@ export default function Home() {
                           </ul>
                         )}
                       </div>
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          if (filteredSuggestions.length > 0) {
-                            setSelectedLifts([...selectedLifts, filteredSuggestions[0]]);
-                            setLiftSearch('');
-                            setShowSuggestions(false);
-                            setHighlightedIndex(-1);
-                          }
-                        }}
-                      >
-                        Add
-                      </Button>
                     </div>
                     <div className="flex gap-2 mb-2">
                       <Button
