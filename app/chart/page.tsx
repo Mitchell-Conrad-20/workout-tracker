@@ -18,6 +18,28 @@ import DatePicker from '@/components/DatePicker';
 import Link from 'next/link';
 
 export default function Home() {
+  // Track focus for routine search
+  const [routineSearchFocused, setRoutineSearchFocused] = useState(false);
+  // Routine filter state
+  const [routines, setRoutines] = useState<{ id: string; name: string }[]>([]);
+  const [routineSearch, setRoutineSearch] = useState('');
+  const [selectedRoutine, setSelectedRoutine] = useState<{ id: string; name: string } | null>(null);
+  const [routineLifts, setRoutineLifts] = useState<{ name: string }[]>([]);
+
+  // Fetch routine lifts when selectedRoutine changes
+  useEffect(() => {
+    if (!selectedRoutine) {
+      setRoutineLifts([]);
+      return;
+    }
+    supabase
+      .from('routine_lifts')
+      .select('name')
+      .eq('routine_id', selectedRoutine.id)
+      .then(({ data, error }) => {
+        if (!error && data) setRoutineLifts(data);
+      });
+  }, [selectedRoutine]);
   // Autocomplete state for filter modal lift search
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -67,6 +89,18 @@ export default function Home() {
   const [liftSearch, setLiftSearch] = useState('');
   const { open, setOpen, isAuthenticated } = useAuthModal();
   const [session, setSession] = useState<Session | null>(null);
+
+  // Fetch routines for the user (must be after session is declared)
+  useEffect(() => {
+    if (!session?.user) return;
+    supabase
+      .from('routines')
+      .select('id, name')
+      .eq('user_id', session.user.id)
+      .then(({ data, error }) => {
+        if (!error && data) setRoutines(data);
+      });
+  }, [session]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [liftData, setLiftData] = useState<Lift[]>([]);
@@ -75,8 +109,9 @@ export default function Home() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<[string, string]>(['', '']);
 
-  // NEW: Metric state
-  const [metric, setMetric] = useState<'weight' | 'reps' | 'volume'>('weight');
+  // Use display labels for metric state
+  type MetricLabel = 'Weight' | 'Reps' | 'Tot Vol' | 'Avg Vol';
+  const [metric, setMetric] = useState<MetricLabel>('Weight');
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
@@ -150,15 +185,45 @@ export default function Home() {
       !selectedLifts.includes(name)
   );
 
-  const filteredData = liftData.filter((lift) => {
-    const isTypeSelected =
-      selectedLifts.length === 0 || selectedLifts.includes(lift.name);
-    const isInDateRange =
-      (!dateRange[0] || lift.date >= dateRange[0]) &&
-      (!dateRange[1] || lift.date <= dateRange[1]);
-    return isTypeSelected && isInDateRange;
-  });
+  // Filtered data for chart (by selected lifts, date range, and routine)
+  const filteredData = React.useMemo(() => {
+    let data = liftData;
+    if (selectedRoutine && routineLifts.length > 0) {
+      const routineLiftNames = routineLifts.map(l => l.name);
+      data = data.filter(lift => routineLiftNames.includes(lift.name));
+    }
+    return data.filter((lift) => {
+      const isTypeSelected = selectedLifts.length === 0 || selectedLifts.includes(lift.name);
+      const isInDateRange = (!dateRange[0] || lift.date >= dateRange[0]) && (!dateRange[1] || lift.date <= dateRange[1]);
+      return isTypeSelected && isInDateRange;
+    });
+  }, [liftData, selectedLifts, dateRange, selectedRoutine, routineLifts]);
 
+  // Chart data for avgVol
+  const chartData = React.useMemo(() => {
+    if (metric !== 'Avg Vol') return filteredData;
+    // Group by date and lift name
+    const grouped: Record<string, Lift[]> = {};
+    filteredData.forEach((lift: Lift) => {
+      const key = `${lift.date}__${lift.name}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(lift);
+    });
+    return Object.entries(grouped).map(([key, lifts]) => {
+      const [date, name] = key.split('__');
+      const totalVol = lifts.reduce((sum, l) => sum + l.weight * l.reps, 0);
+      const avgVol = lifts.length > 0 ? Math.round(totalVol / lifts.length) : 0;
+      return {
+        ...lifts[0],
+        date,
+        name,
+        value: avgVol,
+        avgVol,
+      };
+    });
+  }, [filteredData, metric]);
+
+  // Clear filters handler
   const handleClearFilters = () => {
     setSelectedLifts([]);
     setDateRange(['', '']);
@@ -168,197 +233,235 @@ export default function Home() {
     <div className="min-h-screen pt-4 pb-20 gap-16 sm:pb-20 font-[family-name:var(--font-geist-sans)] flex justify-center">
       <AuthModal open={open} onClose={() => setOpen(false)} />
       {isAuthenticated ? (
-      <main className="w-full sm:w-5/6 md:w-2/3 flex flex-col gap-[32px] items-center sm:items-start">
-        <div className="flex items-center justify-between w-full mb-2">
-          <h1 className="px-4 text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">Your Chart</h1>
+        <main className="w-full sm:w-5/6 md:w-2/3 flex flex-col gap-[32px] items-center sm:items-start">
+          <div className="flex items-center justify-between w-full mb-2">
+            <h1 className="px-4 text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">Your Chart</h1>
+            {session && (
+              <div className="flex gap-2 items-center">
+                <button
+                  onClick={handleOpenModal}
+                  className="p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+                >
+                  +
+                </button>
+                <Link
+                  href="/log-routine"
+                  className="p-1 mr-15 md:mr-0 sm:mr-2 cursor-pointer rounded-full w-10 h-10 text-2xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
+                  title="Log a Routine"
+                >
+                  🏋️
+                </Link>
+              </div>
+            )}
+          </div>
+
           {session && (
-            <div className="flex gap-2 items-center">
-              <button
-                onClick={handleOpenModal}
-                className="p-1 cursor-pointer rounded-full w-10 h-10 text-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
-              >
-                +
-              </button>
-              <Link
-                href="/log-routine"
-                className="p-1 mr-15 md:mr-0 sm:mr-2 cursor-pointer rounded-full w-10 h-10 text-2xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors duration-300 ease-in-out flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent"
-                title="Log a Routine"
-              >
-                🏋️
-              </Link>
-            </div>
-          )}
-        </div>
+            <>
+              <div className="px-4 flex flex-col md:flex-row gap-2 w-full">
+                <Button
+                  dark
+                  onClick={() => setIsFilterModalOpen(true)}
+                  className="w-full md:w-auto"
+                >
+                  Filter Lifts
+                </Button>
 
-        {session && (
-          <>
-            <div className="px-4 flex flex-col md:flex-row gap-2 w-full">
-              <Button
-                dark
-                onClick={() => setIsFilterModalOpen(true)}
-                className="w-full md:w-auto"
-              >
-                filter lifts
-              </Button>
+                {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
+                  <Button onClick={handleClearFilters} >
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
 
-              {(selectedLifts.length > 0 || dateRange[0] || dateRange[1]) && (
-              <Button onClick={handleClearFilters} >
-                clear filters
-              </Button>
-            )}
-
-            </div>
-
-            {loading ? (
-              <p className="text-gray-500">Loading chart...</p>
-            ) : filteredData.length > 0 ? (
-              <Chart data={filteredData} defaultMetric={metric} />
-            ) : (
-              <p className="text-gray-400 mt-4">no data for selected filters</p>
-            )}
-
-            {isModalOpen && (
-              <Modal open={isModalOpen} onClose={handleCloseModal}>
-                <h2 className="text-lg font-semibold mb-4">Add Lift</h2>
-                <LiftForm
-                  initialData={null}
-                  onSubmit={handleFormSubmit}
-                  onCancel={handleCloseModal}
+              {loading ? (
+                <p className="text-gray-500">Loading chart...</p>
+              ) : (metric === 'Avg Vol' ? chartData.length > 0 : filteredData.length > 0) ? (
+                <Chart
+                  data={metric === 'Avg Vol' ? chartData : filteredData}
+                  defaultMetric={
+                    metric === 'Weight' ? 'weight' :
+                    metric === 'Reps' ? 'reps' :
+                    metric === 'Tot Vol' ? 'volume' :
+                    metric === 'Avg Vol' ? 'volume' :
+                    'weight'
+                  }
                 />
-              </Modal>
-            )}
+              ) : (
+                <p className="text-gray-400 mt-4">no data for selected filters</p>
+              )}
 
-            {isFilterModalOpen && (
-              <Modal
-                open={isFilterModalOpen}
-                onClose={() => setIsFilterModalOpen(false)}
-              >
-                <h2 className="text-xl font-semibold mb-4">Filter Lifts</h2>
-                <div className="flex flex-col gap-2 mb-4">
-                  <div className="flex gap-2 mb-2">
-                    <div className="relative w-full">
-                      <Input
-                        dark
-                        ref={inputRef}
-                        type="text"
-                        placeholder="Search lifts..."
-                        value={liftSearch}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                          setLiftSearch(e.target.value);
-                          setShowSuggestions(true);
-                          setHighlightedIndex(-1);
-                        }}
-                        onFocus={() => setShowSuggestions(true)}
-                        onKeyDown={handleKeyDown}
-                        className="w-full"
-                      />
-                      {showSuggestions && filteredSuggestions.length > 0 && (
-                        <ul className="absolute z-10 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-md mt-1 w-full max-h-40 overflow-y-auto shadow-lg">
-                          {filteredSuggestions.map((suggestion, index) => (
-                            <li
-                              key={suggestion}
-                              className={`px-3 py-2 cursor-pointer ${
-                                index === highlightedIndex
-                                  ? 'bg-gray-200 dark:bg-neutral-700'
-                                  : 'hover:bg-gray-100 dark:hover:bg-neutral-700'
-                              }`}
-                              onMouseDown={() => handleSuggestionClick(suggestion)}
+              {isModalOpen && (
+                <Modal open={isModalOpen} onClose={handleCloseModal}>
+                  <h2 className="text-lg font-semibold mb-4">Add Lift</h2>
+                  <LiftForm
+                    initialData={null}
+                    onSubmit={handleFormSubmit}
+                    onCancel={handleCloseModal}
+                  />
+                </Modal>
+              )}
+
+              {isFilterModalOpen && (
+                <Modal
+                  open={isFilterModalOpen}
+                  onClose={() => setIsFilterModalOpen(false)}
+                >
+                  <h2 className="text-xl font-semibold mb-4">Filter Lifts</h2>
+                  <div className="flex flex-col gap-2 mb-4">
+                    {/* Routine filter */}
+                    <div className="mb-2">
+                      <label className="text-sm font-medium mb-2 block">Filter by Routine</label>
+                      <div className="relative w-full">
+                        <Input
+                          dark
+                          type="text"
+                          placeholder="Search routines..."
+                          value={routineSearch}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoutineSearch(e.target.value)}
+                          onFocus={() => setRoutineSearchFocused(true)}
+                          onBlur={() => setTimeout(() => setRoutineSearchFocused(false), 100)}
+                          className="w-full mb-2"
+                        />
+                        {routineSearchFocused && (
+                          <ul className="absolute z-10 w-full max-h-32 overflow-y-auto bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded shadow-lg">
+                            {routines.filter(r => r.name.toLowerCase().includes(routineSearch.toLowerCase())).map(routine => (
+                              <li
+                                key={routine.id}
+                                className={`px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700 ${selectedRoutine?.id === routine.id ? 'bg-gray-200 dark:bg-neutral-700' : ''}`}
+                                onMouseDown={() => setSelectedRoutine(routine)}
+                              >
+                                {routine.name}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      {selectedRoutine && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1 bg-gray-200 dark:bg-neutral-800 rounded px-2 py-1">
+                            <span>{selectedRoutine.name}</span>
+                            <button
+                              type="button"
+                              className="text-red-500 hover:text-red-700 ml-1"
+                              onClick={() => setSelectedRoutine(null)}
                             >
-                              {suggestion}
-                            </li>
-                          ))}
-                        </ul>
+                              &times;
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        if (filteredSuggestions.length > 0) {
-                          setSelectedLifts([...selectedLifts, filteredSuggestions[0]]);
-                          setLiftSearch('');
-                          setShowSuggestions(false);
-                          setHighlightedIndex(-1);
-                        }
-                      }}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                  <div className="flex gap-2 mb-2">
-                    <Button
-                      dark
-                      type="button"
-                      onClick={() => setSelectedLifts([...liftTypes])} 
-                    >
-                      Select All Lifts
-                    </Button>
-                    <Button
-                      dark
-                      type="button"
-                      onClick={() => setSelectedLifts([])}
-                    >
-                      Remove All
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedLifts.map((lift) => (
-                      <div key={lift} className="flex items-center gap-1 bg-gray-200 dark:bg-neutral-800 rounded px-2 py-1">
-                        <span>{lift}</span>
-                        <button
-                          type="button"
-                          className="text-red-500 hover:text-red-700 ml-1"
-                          onClick={() => setSelectedLifts(selectedLifts.filter(l => l !== lift))}
-                        >
-                          &times;
-                        </button>
+                    {/* Lift search and selection */}
+                    <label className="text-sm font-medium mb-2 block">Filter by Lift</label>
+                    <div className="flex gap-2 mb-2">
+                      <div className="relative w-full">
+                        <Input
+                          dark
+                          ref={inputRef}
+                          type="text"
+                          placeholder="Search lifts..."
+                          value={liftSearch}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            setLiftSearch(e.target.value);
+                            setShowSuggestions(true);
+                            setHighlightedIndex(-1);
+                          }}
+                          onFocus={() => setShowSuggestions(true)}
+                          onKeyDown={handleKeyDown}
+                          className="w-full"
+                        />
+                        {showSuggestions && filteredSuggestions.length > 0 && (
+                          <ul className="absolute z-10 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-md mt-1 w-full max-h-40 overflow-y-auto shadow-lg">
+                            {filteredSuggestions.map((suggestion, index) => (
+                              <li
+                                key={suggestion}
+                                className={`px-3 py-2 cursor-pointer ${
+                                  index === highlightedIndex
+                                    ? 'bg-gray-200 dark:bg-neutral-700'
+                                    : 'hover:bg-gray-100 dark:hover:bg-neutral-700'
+                                }`}
+                                onMouseDown={() => handleSuggestionClick(suggestion)}
+                              >
+                                {suggestion}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
-                    ))}
+                    </div>
+                    <div className="flex gap-2 mb-2">
+                      <Button
+                        dark
+                        type="button"
+                        onClick={() => setSelectedLifts([...liftTypes])} 
+                      >
+                        Select All Lifts
+                      </Button>
+                      <Button
+                        dark
+                        type="button"
+                        onClick={() => setSelectedLifts([])}
+                      >
+                        Remove All
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedLifts.map((lift) => (
+                        <div key={lift} className="flex items-center gap-1 bg-gray-200 dark:bg-neutral-800 rounded px-2 py-1">
+                          <span>{lift}</span>
+                          <button
+                            type="button"
+                            className="text-red-500 hover:text-red-700 ml-1"
+                            onClick={() => setSelectedLifts(selectedLifts.filter(l => l !== lift))}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Metric toggle inside filter modal */}
+                    <div className="mt-4">
+                      <label className="text-sm font-medium mb-2 block">Metric</label>
+                      <Toggle
+                        options={['Weight', 'Reps', 'Tot Vol', 'Avg Vol']}
+                        selected={metric}
+                        onSelect={(val) => setMetric(val as MetricLabel)}
+                      />
+                    </div>
                   </div>
-                  {/* Metric toggle inside filter modal */}
-                  <div className="mt-4">
-                    <label className="text-sm font-medium mb-2 block">Metric</label>
-                    <Toggle
-                      options={['weight', 'reps', 'volume']}
-                      selected={metric}
-                      onSelect={(val) => setMetric(val as typeof metric)}
+
+                  <div className="flex flex-col gap-2 mb-6">
+                    <label className="text-sm font-medium">Start Date</label>
+                    <DatePicker
+                      value={dateRange[0]}
+                      onChange={(val: string) => setDateRange([val, dateRange[1]])}
+                    />
+                    <label className="text-sm font-medium">End Date</label>
+                    <DatePicker
+                      value={dateRange[1]}
+                      onChange={(val: string) => setDateRange([dateRange[0], val])}
                     />
                   </div>
-                </div>
 
-                <div className="flex flex-col gap-2 mb-6">
-                  <label className="text-sm font-medium">Start Date</label>
-                  <DatePicker
-                    value={dateRange[0]}
-                    onChange={(val: string) => setDateRange([val, dateRange[1]])}
-                  />
-                  <label className="text-sm font-medium">End Date</label>
-                  <DatePicker
-                    value={dateRange[1]}
-                    onChange={(val: string) => setDateRange([dateRange[0], val])}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-4">
-                  <Button dark onClick={() => setIsFilterModalOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={() => setIsFilterModalOpen(false)}>
-                    Apply
-                  </Button>
-                </div>
-              </Modal>
-            )}
-          </>
-        )}
-      </main>
+                  <div className="flex justify-end gap-4">
+                    <Button dark onClick={() => setIsFilterModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={() => setIsFilterModalOpen(false)}>
+                      Apply
+                    </Button>
+                  </div>
+                </Modal>
+              )}
+            </>
+          )}
+        </main>
       ) : (
-
-      <div className="flex flex-col items-center justify-center h-64 text-neutral-500">
-        <h2 className="text-xl font-semibold mb-2">No data available</h2>
-        <p>Please log in to view your logbook.</p>
-      </div>
+        <div className="flex flex-col items-center justify-center h-64 text-neutral-500">
+          <h2 className="text-xl font-semibold mb-2">No data available</h2>
+          <p>Please log in to view your logbook.</p>
+        </div>
       )}
-
     </div>
   );
 }
