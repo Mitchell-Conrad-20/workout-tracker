@@ -87,6 +87,14 @@ export default function HamburgerMenu() {
                 Chart
               </Link>
 
+              <Link
+                href="/health"
+                onClick={() => setIsOpen(false)}
+                className="transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
+              >
+                Health
+              </Link>
+
               <div className="mt-2 border-t border-gray-300 dark:border-white/[.1] pt-3">
                 <Link
                   href="/settings"
