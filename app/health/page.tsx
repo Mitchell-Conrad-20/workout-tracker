@@ -106,37 +106,34 @@ export default function Health() {
           {/* Logbook/history */}
           <div className="w-full mt-8">
             <h2 className="text-xl font-semibold mb-4">Bodyweight Log</h2>
-            <div className="overflow-x-auto rounded border border-gray-200 dark:border-neutral-700">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
-                <thead className="bg-gray-50 dark:bg-neutral-800">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Weight (lbs)</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-neutral-900 divide-y divide-gray-200 dark:divide-neutral-800">
-                  {chartData.map((entry) => (
-                    <tr key={entry.id}>
-                      <td className="px-4 py-2 whitespace-nowrap">{entry.date}</td>
-                      <td className="px-4 py-2 whitespace-nowrap">{entry.weight}</td>
-                      <td className="px-4 py-2 whitespace-nowrap flex gap-4 items-center">
-                        <span
-                          className="text-blue-600 hover:underline cursor-pointer"
-                          onClick={() => handleEditOpen(entry)}
-                        >
-                          Edit
-                        </span>
-                        <span
-                          className="text-red-600 hover:underline cursor-pointer"
-                          onClick={() => handleDelete(entry.id)}
-                        >
-                          Delete
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+              {/* Header row */}
+              <div className="flex px-4 py-2 bg-gray-50 dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <div className="w-1/3">Date</div>
+                <div className="w-1/3">Weight (lbs)</div>
+                <div className="w-1/3"></div>
+              </div>
+              {/* Data rows */}
+              {chartData.map((entry) => (
+                <div key={entry.id} className="flex px-4 py-2 items-center border-b border-gray-100 dark:border-neutral-800 last:border-b-0">
+                  <div className="w-1/3 whitespace-nowrap">{entry.date}</div>
+                  <div className="w-1/3 whitespace-nowrap">{entry.weight}</div>
+                  <div className="w-1/3 flex gap-4 items-center">
+                    <span
+                      className="text-blue-600 hover:underline cursor-pointer"
+                      onClick={() => handleEditOpen(entry)}
+                    >
+                      Edit
+                    </span>
+                    <span
+                      className="text-red-600 hover:underline cursor-pointer"
+                      onClick={() => handleDelete(entry.id)}
+                    >
+                      Delete
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
