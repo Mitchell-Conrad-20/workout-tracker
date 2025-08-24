@@ -110,15 +110,15 @@ export default function Health() {
               {/* Header row */}
               <div className="flex px-4 py-2 bg-gray-50 dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 <div className="w-1/3">Date</div>
-                <div className="w-1/3">Weight (lbs)</div>
+                <div className="w-1/3 flex justify-center text-center">Weight (lbs)</div>
                 <div className="w-1/3"></div>
               </div>
               {/* Data rows */}
               {chartData.map((entry) => (
                 <div key={entry.id} className="flex px-4 py-2 items-center border-b border-gray-100 dark:border-neutral-800 last:border-b-0">
                   <div className="w-1/3 whitespace-nowrap">{entry.date}</div>
-                  <div className="w-1/3 whitespace-nowrap">{entry.weight}</div>
-                  <div className="w-1/3 flex gap-4 items-center">
+                  <div className="w-1/3 whitespace-nowrap flex justify-center text-center">{entry.weight}</div>
+                  <div className="w-1/3 flex gap-4 items-center ml-auto justify-end">
                     <span
                       className="text-blue-600 hover:underline cursor-pointer"
                       onClick={() => handleEditOpen(entry)}
