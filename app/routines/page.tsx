@@ -109,7 +109,7 @@ export default function RoutinesPage() {
       if (!routinesError && routinesData) {
         // Fetch all lifts for all routines in one query
         const routineIds = routinesData.map(r => r.id);
-        let liftsByRoutine: Record<number, Lift[]> = {};
+        const liftsByRoutine: Record<number, Lift[]> = {};
         if (routineIds.length > 0) {
           const { data: liftsData } = await supabase
             .from('routine_lifts')
