@@ -39,7 +39,7 @@ export default function HealthPage() {
     const day = `${d.getDate()}`.padStart(2, '0');
     return `${d.getFullYear()}-${m}-${day}`;
   });
-  const [unit, setUnit] = useState<'lb' | 'kg'>('lb');
+  const [unit] = useState<'lb' | 'kg'>('lb');
   const [weightInput, setWeightInput] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [history, setHistory] = useState<HealthRow[]>([]);
@@ -205,7 +205,7 @@ export default function HealthPage() {
               } else {
                 return (
                   <div className="rounded bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 font-medium px-4 py-2 mb-1">
-                    You haven't logged your weight today.
+                    You haven&apos;t logged your weight today.
                   </div>
                 );
               }
@@ -235,7 +235,7 @@ export default function HealthPage() {
                 // 6 months ago
                 const sixMoAgo = format(new Date(new Date(today).setMonth(new Date(today).getMonth() - 6)), 'yyyy-MM-dd');
                 const sixMo = [...sorted].reverse().find(bw => bw.date <= sixMoAgo) || sorted[0];
-                const getWeight = (bw: any) => bw.bodyweight_kg != null ? (unit === 'lb' ? bw.bodyweight_kg / KG_PER_LB : bw.bodyweight_kg) : null;
+                const getWeight = (bw: HealthRow) => bw.bodyweight_kg != null ? (unit === 'lb' ? bw.bodyweight_kg / KG_PER_LB : bw.bodyweight_kg) : null;
                 const currentW = getWeight(current);
                 const ytdW = getWeight(ytd);
                 const oneYearW = getWeight(oneYear);
