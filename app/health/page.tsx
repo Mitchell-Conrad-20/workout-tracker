@@ -273,6 +273,14 @@ export default function HealthPage() {
               <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
                 <Input dark type="number" placeholder="Weight" value={weightInput} onChange={e => setWeightInput(e.target.value)} />
                 <DatePicker value={selectedDate} onChange={setSelectedDate} />
+                <Input
+                  dark
+                  type="text"
+                  placeholder="Note (optional)"
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  maxLength={100}
+                />
                 <div className="flex justify-end gap-2 mt-2">
                   <Button dark type="button" onClick={() => setSaving(false)}>Cancel</Button>
                   <Button type="submit">Log</Button>
