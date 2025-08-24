@@ -300,7 +300,9 @@ export default function RoutinesPage() {
         <div className="text-center text-gray-500 py-8">No routines found, add one!</div>
       )}
       <div className="space-y-4">
-        {routines.map(routine => (
+        {[...routines]
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map(routine => (
           <div
             key={routine.id}
             className={`bg-white dark:bg-neutral-900 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-neutral-800 transition-all ${routine.open ? 'shadow-lg' : 'cursor-pointer hover:border-blue-400'}`}
