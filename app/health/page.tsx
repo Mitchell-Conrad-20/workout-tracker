@@ -320,7 +320,7 @@ export default function HealthPage() {
 
           {/* Recent entries */}
           <div className="bg-white dark:bg-neutral-900 rounded-xl p-4">
-            <h2 className="text-lg font-semibold mb-3"></h2>
+            <h2 className="text-lg font-semibold mb-3">Recent Entries</h2>
             {loading ? (
               <p className="text-sm text-neutral-500">Loading…</p>
             ) : history.length === 0 ? (
