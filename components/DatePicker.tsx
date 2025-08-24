@@ -1,13 +1,10 @@
 import React from 'react';
 
-
-interface DatePickerProps {
-    value: string;
-    onChange: (date: string) => void;
-    small?: boolean; // Optional prop to control size
-}
-
-const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, small=false }) => {
+const DatePicker = ({ value, onChange, small = false }: {
+  value: string;
+  onChange: (date: string) => void;
+  small?: boolean;
+}) => {
   return (
     <div className="relative w-full">
       <input

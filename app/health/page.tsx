@@ -5,6 +5,7 @@ import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import Chart from '@/components/Chart';
 import Input from '@/components/Input';
+import DatePicker from '@/components/DatePicker';
 import { format } from 'date-fns';
 
 // Mock bodyweight entry type
@@ -86,12 +87,69 @@ export default function Health() {
     <div className="min-h-screen pt-4 pb-20 gap-16 sm:pb-20 font-[family-name:var(--font-geist-sans)]">
       <main className="max-w-3xl mx-auto p-4 flex flex-col gap-[32px]">
         <div className="w-full">
-          <div className="flex items-center justify-between w-full mb-2">
+          <div className="flex items-center w-full mb-2">
             <h1 className="text-3xl font-semibold font-[family-name:var(--font-geist-mono)]">Your Health</h1>
-            <Button dark onClick={() => setIsModalOpen(true)}>
-              Log Bodyweight
-            </Button>
           </div>
+
+          {/* Health Overview Section */}
+
+          <section className="w-full rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 mb-8 p-4 flex flex-col gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
+              <h2 className="text-xl font-semibold">Health Overview</h2>
+              <Button dark onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
+                Log Bodyweight
+              </Button>
+            </div>
+            {/* Reminder */}
+            {(() => {
+              const today = format(new Date(), 'yyyy-MM-dd');
+              const todayEntry = bodyweights.find(bw => bw.date === today);
+              if (todayEntry) {
+                return (
+                  <div className="text-green-700 dark:text-green-400 font-medium mb-2">
+                    You logged your weight at {todayEntry.weight} lbs today.
+                  </div>
+                );
+              } else {
+                return (
+                  <div className="text-yellow-700 dark:text-yellow-400 font-medium mb-2">
+                    You haven't logged your weight today.
+                  </div>
+                );
+              }
+            })()}
+
+            {/* Current Weight */}
+            <div className="text-lg font-medium">
+              Current Weight: {bodyweights.length > 0 ? bodyweights[bodyweights.length - 1].weight + ' lbs' : 'N/A'}
+            </div>
+
+            {/* Weight Change Stats */}
+            <div className="text-sm text-gray-700 dark:text-gray-300">
+              {(() => {
+                if (bodyweights.length === 0) return null;
+                const today = format(new Date(), 'yyyy-MM-dd');
+                const sorted = [...bodyweights].sort((a, b) => a.date.localeCompare(b.date));
+                const current = sorted[sorted.length - 1];
+                // Find YTD (since Jan 1 this year)
+                const jan1 = today.slice(0, 4) + '-01-01';
+                const ytd = sorted.find(bw => bw.date >= jan1) || sorted[0];
+                // 1 year ago
+                const yearAgo = format(new Date(new Date(today).setFullYear(new Date(today).getFullYear() - 1)), 'yyyy-MM-dd');
+                const oneYear = [...sorted].reverse().find(bw => bw.date <= yearAgo) || sorted[0];
+                // 6 months ago
+                const sixMoAgo = format(new Date(new Date(today).setMonth(new Date(today).getMonth() - 6)), 'yyyy-MM-dd');
+                const sixMo = [...sorted].reverse().find(bw => bw.date <= sixMoAgo) || sorted[0];
+                return (
+                  <>
+                    <div>YTD Change: <span>{(current.weight - ytd.weight > 0 ? '+' : (current.weight - ytd.weight < 0 ? '-' : ''))}{Math.abs(current.weight - ytd.weight).toFixed(1)} lbs</span></div>
+                    <div>1 Year Change: <span>{(current.weight - oneYear.weight > 0 ? '+' : (current.weight - oneYear.weight < 0 ? '-' : ''))}{Math.abs(current.weight - oneYear.weight).toFixed(1)} lbs</span></div>
+                    <div>6 Month Change: <span>{(current.weight - sixMo.weight > 0 ? '+' : (current.weight - sixMo.weight < 0 ? '-' : ''))}{Math.abs(current.weight - sixMo.weight).toFixed(1)} lbs</span></div>
+                  </>
+                );
+              })()}
+            </div>
+          </section>
 
           <h2 className="text-xl font-semibold mb-4">Bodyweight Chart</h2>
 
@@ -114,7 +172,7 @@ export default function Health() {
                 <div className="w-1/3"></div>
               </div>
               {/* Data rows */}
-              {chartData.map((entry) => (
+              {[...chartData].reverse().map((entry) => (
                 <div key={entry.id} className="flex px-4 py-2 items-center border-b border-gray-100 dark:border-neutral-800 last:border-b-0">
                   <div className="w-1/3 whitespace-nowrap">{entry.date}</div>
                   <div className="w-1/3 whitespace-nowrap flex justify-center text-center">{entry.weight}</div>
@@ -141,30 +199,27 @@ export default function Health() {
           {editModalOpen && (
             <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)}>
               <h2 className="text-lg font-semibold mb-4">Edit Bodyweight</h2>
-              <div className="flex flex-col gap-4">
+              <form className="flex flex-col gap-4" onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
                 <Input
+                  dark
                   type="number"
                   placeholder="Weight (lbs)"
                   value={editWeight}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditWeight(e.target.value)}
-                  className="w-full"
-                  min="0"
                 />
-                <Input
-                  type="date"
+                <DatePicker
                   value={editDate}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditDate(e.target.value)}
-                  className="w-full"
+                  onChange={setEditDate}
                 />
                 <div className="flex justify-end gap-2 mt-2">
-                  <Button dark onClick={() => setEditModalOpen(false)}>
+                  <Button dark type="button" onClick={() => setEditModalOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleEditSave}>
+                  <Button type="submit">
                     Save
                   </Button>
                 </div>
-              </div>
+              </form>
             </Modal>
           )}
 
@@ -172,30 +227,27 @@ export default function Health() {
           {isModalOpen && (
             <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
               <h2 className="text-lg font-semibold mb-4">Log Bodyweight</h2>
-              <div className="flex flex-col gap-4">
+              <form className="flex flex-col gap-4" onSubmit={e => { e.preventDefault(); handleAddWeight(); }}>
                 <Input
+                  dark
                   type="number"
                   placeholder="Weight (lbs)"
                   value={weightInput}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWeightInput(e.target.value)}
-                  className="w-full"
-                  min="0"
                 />
-                <Input
-                  type="date"
+                <DatePicker
                   value={dateInput}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateInput(e.target.value)}
-                  className="w-full"
+                  onChange={setDateInput}
                 />
                 <div className="flex justify-end gap-2 mt-2">
-                  <Button dark onClick={() => setIsModalOpen(false)}>
+                  <Button dark type="button" onClick={() => setIsModalOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleAddWeight}>
+                  <Button type="submit">
                     Log
                   </Button>
                 </div>
-              </div>
+              </form>
             </Modal>
           )}
         </div>
