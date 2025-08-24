@@ -184,9 +184,9 @@ export default function HealthPage() {
           {err && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
 
           {/* Health Overview Section */}
-          <section className="w-full rounded-xl bg-white dark:bg-neutral-900 mb-8 p-6 flex flex-col gap-4 shadow-sm border border-gray-100 dark:border-neutral-800">
+          <div className="w-full rounded-xl bg-white dark:bg-neutral-900 mb-8 p-6 flex flex-col gap-4 shadow-sm border border-gray-100 dark:border-neutral-800">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-3">
-              <h2 className="text-2xl font-bold tracking-tight">Health Overview</h2>
+              <h2 className="text-lg font-semibold mb-3">Health Overview</h2>
               <Button dark onClick={() => setSaving(true)} className="w-full sm:w-auto text-base font-semibold py-2 px-6 rounded-full">
                 Log Bodyweight
               </Button>
@@ -264,7 +264,7 @@ export default function HealthPage() {
                 );
               })()}
             </div>
-          </section>
+          </div>
 
           {/* Modal for logging bodyweight */}
           {saving && (
@@ -290,7 +290,7 @@ export default function HealthPage() {
           )}
 
           {/* Chart */}
-          <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 mb-6">
+          <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-neutral-800">
             <h2 className="text-lg font-semibold mb-3">Weight Chart</h2>
             <div className="h-[400px] w-full">
               <ResponsiveContainer width="99%" height="100%">
@@ -327,7 +327,7 @@ export default function HealthPage() {
           </div>
 
           {/* Recent entries */}
-          <div className="bg-white dark:bg-neutral-900 rounded-xl p-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-neutral-800">
             <h2 className="text-lg font-semibold mb-3">Recent Entries</h2>
             {loading ? (
               <p className="text-sm text-neutral-500">Loading…</p>

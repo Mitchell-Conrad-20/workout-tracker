@@ -99,28 +99,34 @@ export default function RoutinesPage() {
   useEffect(() => {
     if (!user) return;
 
-    const fetchRoutines = async () => {
-      const { data, error } = await supabase
+    const fetchRoutinesAndLifts = async () => {
+      // Fetch all routines for the user
+      const { data: routinesData, error: routinesError } = await supabase
         .from('routines')
         .select('*')
         .eq('user_id', user.id);
 
-      if (!error && data) {
-        // For each routine, fetch its lifts
-        const routinesWithLifts = await Promise.all(data.map(async r => {
+      if (!routinesError && routinesData) {
+        // Fetch all lifts for all routines in one query
+        const routineIds = routinesData.map(r => r.id);
+        let liftsByRoutine: Record<number, Lift[]> = {};
+        if (routineIds.length > 0) {
           const { data: liftsData } = await supabase
             .from('routine_lifts')
-            .select('name, sets')
-            .eq('routine_id', r.id);
-          // Preserve open state if this routine is currently open
-          const isOpen = openRoutineId !== null && r.id === openRoutineId;
-          return { ...r, lifts: Array.isArray(liftsData) ? liftsData : [], open: isOpen };
-        }));
-        setRoutines(routinesWithLifts);
+            .select('name, sets, routine_id')
+            .in('routine_id', routineIds);
+          if (Array.isArray(liftsData)) {
+            liftsData.forEach(lift => {
+              if (!liftsByRoutine[lift.routine_id]) liftsByRoutine[lift.routine_id] = [];
+              liftsByRoutine[lift.routine_id].push({ name: lift.name, sets: lift.sets });
+            });
+          }
+        }
+        setRoutines(routinesData.map(r => ({ ...r, lifts: liftsByRoutine[r.id] || [], open: false })));
       }
     };
 
-    fetchRoutines();
+    fetchRoutinesAndLifts();
   }, [user]);
 
   const handleAddRoutine = () => {
@@ -273,20 +279,7 @@ export default function RoutinesPage() {
     const routine = routines.find(r => r.id === id);
     if (routine) {
       setRoutineName(routine.name);
-      // Fetch lifts from DB for this routine
-      supabase
-        .from('routine_lifts')
-        .select('name, sets')
-        .eq('routine_id', routine.id)
-        .then(({ data, error }) => {
-          if (!error && Array.isArray(data)) {
-            setLiftInputs([...data, { name: '', sets: 0 }]);
-            // Update lifts in routines state for correct lift count
-            setRoutines(prev => prev.map(r => r.id === id ? { ...r, lifts: Array.isArray(data) ? data : [], open: true } : r));
-          } else {
-            setLiftInputs([{ name: '', sets: 0 }]);
-          }
-        });
+      setLiftInputs([...(routine.lifts || []), { name: '', sets: 0 }]);
       setOpenRoutineId(id);
     }
   };
@@ -310,7 +303,7 @@ export default function RoutinesPage() {
         {routines.map(routine => (
           <div
             key={routine.id}
-            className={`border rounded-lg p-4 bg-gray-50 dark:bg-neutral-900 transition-all ${routine.open ? 'shadow-lg' : 'cursor-pointer hover:border-blue-400'}`}
+            className={`bg-white dark:bg-neutral-900 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-neutral-800 transition-all ${routine.open ? 'shadow-lg' : 'cursor-pointer hover:border-blue-400'}`}
             onClick={() => !routine.open && handleOpenRoutine(routine.id)}
           >
             {routine.open ? (
@@ -403,10 +396,10 @@ export default function RoutinesPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between relative">
                 <span className="font-semibold text-lg">{routine.name}</span>
-                <span className="text-sm text-gray-500">{
-                  routine.lifts?.length != null ? routine.lifts.length : 0                  
+                <span className="absolute left-1/2 -translate-x-1/2 text-sm text-gray-500 pointer-events-none">{
+                  routine.lifts?.length != null ? routine.lifts.length : 0
                 } lifts</span>
                 <button
                   onClick={e => { e.stopPropagation(); handleDeleteRoutine(routine.id); }}

@@ -243,41 +243,46 @@ const Logbook: React.FC = () => {
 
           {/* Logbook Display */}
           {selectedDate && currentLifts.length > 0 ? (
-            <div className="bg-white dark:bg-neutral-900 p-4 rounded shadow">
+            <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 mb-6 shadow-sm border border-gray-100 dark:border-neutral-800">
               <h2 className="text-xl font-semibold mb-4">
                 {format(parseISO(selectedDate), 'MMMM d, yyyy')}
               </h2>
               {Object.entries(groupedByExercise)
                 .sort(([a], [b]) => a.localeCompare(b))
-                .map(([exerciseName, sets]) => (
-                  <div key={exerciseName} className="mb-4 p-3 border rounded dark:border-neutral-700">
-                    <p className="font-medium mb-2">{exerciseName}</p>
-                    <div className="space-y-1">
-                      {sets
-                        .slice()
-                        .sort((a, b) => b.weight - a.weight)
-                        .map((set) => (
-                          <div key={set.id} className="flex justify-between items-center">
-                            <p>{set.weight} lbs × {set.reps} reps</p>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleEdit(set)}
-                                className="cursor-pointer text-blue-600 hover:underline"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDelete(set.id)}
-                                className="cursor-pointer text-red-600 hover:underline"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                ))}
+                .map(([exerciseName, sets], idx) => {
+                  return (
+                    <React.Fragment key={exerciseName}>
+                      {idx > 0 && <hr className="my-4 border-gray-200 dark:border-neutral-700" />}
+                      <div className="mb-4 p-3 rounded-xl">
+                        <p className="font-medium mb-2">{exerciseName}</p>
+                        <div className="space-y-1">
+                          {sets
+                            .slice()
+                            .sort((a, b) => b.weight - a.weight)
+                            .map((set) => (
+                              <div key={set.id} className="flex justify-between items-center">
+                                <p>{set.weight} lbs × {set.reps} reps</p>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleEdit(set)}
+                                    className="cursor-pointer text-blue-600 hover:underline"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(set.id)}
+                                    className="cursor-pointer text-red-600 hover:underline"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
             </div>
           ) : (
             <div className="text-neutral-500">
