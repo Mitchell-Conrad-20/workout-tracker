@@ -92,21 +92,38 @@ const RoutineLiftForm: React.FC<Props> = ({ onSubmitSuccess, selectedDate }) => 
   // Submit all sets
   const handleSubmit = async () => {
     if (!user || !selectedRoutineId || setEntries.length === 0) return;
-    // Validate
-    const valid = setEntries.every(e => e.liftName && e.weight && e.reps);
+
+    // Validate: each set must be either completely empty or have both weight and reps filled
+    const valid = setEntries.every(e => {
+      const weightFilled = String(e.weight).trim() !== '';
+      const repsFilled = String(e.reps).trim() !== '';
+      return (!weightFilled && !repsFilled) || (weightFilled && repsFilled);
+    });
     if (!valid) {
-      setErrorMsg('Please fill in weight and reps for all sets.');
+      setErrorMsg('Please provide both weight and reps for any set you start filling out.');
       return;
     }
+
+    // Only persist rows that have both weight and reps
+    const filled = setEntries.filter(e => {
+      return String(e.weight).trim() !== '' && String(e.reps).trim() !== '';
+    });
+
+    if (filled.length === 0) {
+      setErrorMsg('No sets to submit.');
+      return;
+    }
+
     setLoading(true);
     const dateToUse = selectedDate || new Date().toISOString().split('T')[0];
-    const liftsToInsert = setEntries.map(e => ({
+    const liftsToInsert = filled.map(e => ({
       name: e.liftName,
       weight: Number(e.weight),
       reps: Number(e.reps),
       date: dateToUse,
       user_id: user.id,
     }));
+
     const { error } = await supabase.from('lifts').insert(liftsToInsert);
     setLoading(false);
     if (error) {
