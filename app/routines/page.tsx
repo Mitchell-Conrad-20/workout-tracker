@@ -78,16 +78,27 @@ export default function RoutinesPage() {
     return () => clearTimeout(handler);
   }, [liftInputs]);
 
-  // Capitalize and sanitize words (same as LiftForm)
+  // Capitalize and sanitize words (preserve leading adjacent capitals like "DB Curl")
   const capitalizeWords = (text: string) => {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9 ]/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .split(' ')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    const cleaned = text.replace(/[^A-Za-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+
+    const words = cleaned.split(' ').map((word) => {
+      if (!word) return '';
+      let runLen = 0;
+      for (let i = 0; i < word.length; i++) {
+        const ch = word.charAt(i);
+        if (/[A-Z]/.test(ch)) runLen++; else break;
+      }
+      if (runLen === 0) {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }
+      if (runLen === word.length) return word;
+      const leading = word.slice(0, runLen);
+      const tail = word.slice(runLen).toLowerCase();
+      return leading + tail;
+    });
+
+    return words.join(' ');
   };
 
   useEffect(() => {

@@ -86,14 +86,44 @@ const LiftForm: React.FC<LiftFormProps> = ({
 
   /** --- Sanitization Helpers --- */
   const capitalizeWords = (text: string) => {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9 ]/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .split(' ')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    // Remove unwanted chars, collapse spaces
+    const cleaned = text.replace(/[^A-Za-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+
+    // For each word, permit an initial run of uppercase letters to remain uppercase
+    // as long as they are contiguous from the start of the word. If a capital
+    // letter appears later after a lowercase (e.g. "DbS"), normalize the word
+    // to lowercase except for the first character.
+    const words = cleaned.split(' ').map((word) => {
+      if (!word) return '';
+      // If the word is all uppercase or starts with multiple adjacent uppercase
+      // letters (like "DB" or "DBRow" where the sequence at start is uppercase
+      // until a lowercase appears), preserve that starting uppercase run and
+      // then lowercase the rest except keep letters as-is where rule allows.
+
+      // Find length of initial contiguous uppercase run
+      let runLen = 0;
+      for (let i = 0; i < word.length; i++) {
+        const ch = word.charAt(i);
+        if (/[A-Z]/.test(ch)) runLen++; else break;
+      }
+
+      if (runLen === 0) {
+        // no leading uppercase run -> normal capitalization
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }
+
+      // If the entire word is uppercase, keep as-is
+      if (runLen === word.length) return word;
+
+      // If there is a leading uppercase run and then mixed case, we must decide
+      // whether the capitals after the run are valid. If there's any lowercase
+      // after the run, lowercase the tail. Preserve the leading run as-is.
+      const leading = word.slice(0, runLen);
+      const tail = word.slice(runLen).toLowerCase();
+      return leading + tail;
+    });
+
+    return words.join(' ');
   };
 
   const sanitizeNumber = (rawValue: string) => {
@@ -210,6 +240,8 @@ const LiftForm: React.FC<LiftFormProps> = ({
         dark
         placeholder="Weight"
         type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         value={weight}
         onChange={handleWeightChange}
       />
@@ -217,6 +249,8 @@ const LiftForm: React.FC<LiftFormProps> = ({
         dark
         placeholder="Reps"
         type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         value={reps}
         onChange={handleRepsChange}
       />
