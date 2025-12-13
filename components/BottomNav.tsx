@@ -44,19 +44,23 @@ const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-3xl bg-white/90 dark:bg-neutral-900/90 backdrop-blur rounded-xl shadow-lg border border-gray-100 dark:border-neutral-800 px-3 py-2 flex justify-between items-center">
-      {items.map((it) => {
+    <div className="fixed bottom-4 left-0 right-0 z-50 pointer-events-none">
+      <div className="max-w-3xl mx-auto px-4 pointer-events-auto">
+        <nav className="w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur rounded-xl shadow-lg border border-gray-100 dark:border-neutral-800 px-3 py-2 flex justify-between items-center">
+          {items.map((it) => {
         const active = pathname === it.href;
           return (
             <Link key={it.href} href={it.href} className={`flex-1 text-center py-2 ${active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}`} aria-label={it.label}>
-            <div className="flex flex-col items-center justify-center gap-1">
-              <it.Icon active={active} />
-              <span className={`text-xs ${active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}`}>{it.label}</span>
-            </div>
-          </Link>
+              <div className="flex flex-col items-center justify-center gap-1">
+                <it.Icon active={active} />
+                <span className={`text-xs ${active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}`}>{it.label}</span>
+              </div>
+            </Link>
         );
-      })}
-    </nav>
+          })}
+        </nav>
+      </div>
+    </div>
   );
 };
 
