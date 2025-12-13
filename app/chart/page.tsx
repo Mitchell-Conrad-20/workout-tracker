@@ -230,7 +230,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen pt-4 pb-20 gap-16 sm:pb-20 font-[family-name:var(--font-geist-sans)] flex justify-center">
+    <div className="pt-4 pb-20 gap-16 sm:pb-20 font-[family-name:var(--font-geist-sans)] flex justify-center">
       <AuthModal open={open} onClose={() => setOpen(false)} />
       {isAuthenticated ? (
         <main className="w-full sm:w-5/6 md:w-2/3 flex flex-col gap-[32px] items-center sm:items-start">

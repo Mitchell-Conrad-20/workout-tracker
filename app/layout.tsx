@@ -26,7 +26,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <HamburgerMenu />
-          {children}
+          <div
+            style={{
+              minHeight: '100vh',
+              paddingBottom: 'calc(84px + env(safe-area-inset-bottom))'
+            }}
+          >
+            {children}
+          </div>
           <BottomNav />
         </Providers>
       </body>
