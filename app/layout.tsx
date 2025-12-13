@@ -26,15 +26,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <HamburgerMenu />
+          {/* padding = w_navbar + paddign_addtional + area_safe */}
           <div
             style={{
               minHeight: '100vh',
-              paddingBottom: 'calc(84px + env(safe-area-inset-bottom))'
+              paddingBottom: 'calc(84px + 8px + env(safe-area-inset-bottom))'
             }}
           >
             {children}
           </div>
-          <BottomNav />
+          <BottomNav/>
         </Providers>
       </body>
     </html>
