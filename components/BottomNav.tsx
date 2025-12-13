@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React from 'react';
+import { useAuthModal } from '@/hooks/useAuthModal';
 
 const IconHome = ({ active }: { active?: boolean }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -35,6 +36,7 @@ const IconHealth = ({ active }: { active?: boolean }) => (
 
 const BottomNav: React.FC = () => {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuthModal();
 
   const items = [
     { href: '/', label: 'Home', Icon: IconHome },
@@ -43,8 +45,10 @@ const BottomNav: React.FC = () => {
     { href: '/health', label: 'Health', Icon: IconHealth },
   ];
 
+  if (!isAuthenticated) return null;
+
   return (
-    <div className="fixed bottom-4 left-0 right-0 z-50 pointer-events-none">
+    <div className="fixed bottom-4 left-0 right-0 z-20 pointer-events-none">
       <div className="max-w-3xl mx-auto px-4 pointer-events-auto">
         <nav className="w-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur rounded-xl shadow-lg border border-gray-100 dark:border-neutral-800 px-3 py-2 flex justify-between items-center">
           {items.map((it) => {
