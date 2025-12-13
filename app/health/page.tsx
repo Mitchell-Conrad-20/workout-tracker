@@ -184,7 +184,7 @@ export default function HealthPage() {
           {err && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{err}</p>}
 
           {/* Health Overview Section */}
-          <div className="w-full rounded-xl bg-white dark:bg-neutral-900 mb-8 p-6 flex flex-col gap-4 shadow-sm border border-gray-100 dark:border-neutral-800">
+          <div className="w-full rounded-xl bg-white dark:bg-neutral-900 mb-6 p-6 flex flex-col gap-4 shadow-sm border border-gray-100 dark:border-neutral-800">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-3">
               <h2 className="text-lg font-semibold mb-3">Health Overview</h2>
               <Button dark onClick={() => setSaving(true)} className="w-full sm:w-auto text-base font-semibold py-2 px-6 rounded-full">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 // import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import HamburgerMenu from '@/components/HamburgerMenu';
+import BottomNav from '@/components/BottomNav';
 import { Providers } from './providers';
 
 // const geistSans = Geist({
@@ -25,7 +26,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <HamburgerMenu />
-          {children}
+          {/* padding = w_navbar + paddign_addtional + area_safe */}
+          <div
+            style={{
+              minHeight: '100vh',
+              paddingBottom: 'calc(84px + 8px + env(safe-area-inset-bottom))'
+            }}
+          >
+            {children}
+          </div>
+          <BottomNav/>
         </Providers>
       </body>
     </html>

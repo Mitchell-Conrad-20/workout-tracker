@@ -27,11 +27,11 @@ const Modal: React.FC<ModalProps> = ({ children, open = false, onClose }) => {
 
   return open ? (
     <div
-      className="transition duration-300 ease-in-out fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+      className="transition duration-300 ease-in-out fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-0 sm:px-4"
       onClick={onClose}
     >
       <div
-        className="relative flex flex-col gap-4 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 p-6 rounded-2xl shadow-2xl max-w-md w-full transition-all max-h-[80vh] overflow-auto"
+        className="relative flex flex-col gap-4 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 p-4 sm:p-6 rounded-none sm:rounded-2xl shadow-2xl max-w-full sm:max-w-md w-full transition-all max-h-[80vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
