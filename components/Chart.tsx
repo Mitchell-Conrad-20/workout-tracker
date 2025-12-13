@@ -33,7 +33,7 @@ const Chart: React.FC<ChartProps> = ({ data, defaultMetric }) => {
 
   // Run all hooks regardless of mounted state
   const allDates = useMemo(
-    () => Array.from(new Set(data.map((lift) => lift.date))).sort(),
+  () => Array.from(new Set(data.map((lift) => lift.date))).sort((a, b) => new Date(a).getTime() - new Date(b).getTime()),
     [data]
   );
 
@@ -44,12 +44,14 @@ const Chart: React.FC<ChartProps> = ({ data, defaultMetric }) => {
 
   type UnifiedData = {
     date: string;
-    [key: string]: string | number | null;
+    ts?: number;
+    [key: string]: string | number | null | undefined;
   };
 
   const unifiedData: UnifiedData[] = useMemo(() => {
     return allDates.map((date) => {
-      const entry: UnifiedData = { date };
+      const ts = new Date(date).getTime();
+      const entry: UnifiedData = { date, ts };
 
       liftNames.forEach((name) => {
         const liftsForNameAndDate = data.filter(
@@ -93,24 +95,31 @@ const Chart: React.FC<ChartProps> = ({ data, defaultMetric }) => {
       <div className="h-[400px] w-full">
         <ResponsiveContainer width="99%" height="100%">
           <LineChart data={unifiedData}>
-            <XAxis dataKey="date" />
+            <XAxis
+              dataKey="ts"
+              type="number"
+              scale="time"
+              domain={["dataMin", "dataMax"]}
+              tickFormatter={(val) => new Date(Number(val)).toISOString().split('T')[0]}
+            />
             <YAxis />
             <Tooltip
               content={({ active, payload, label }) => {
-                if (!active || !payload || !label) return null;
+                if (!active || !payload) return null;
+                // label is numeric timestamp when XAxis uses ts
+                const labelDate = typeof label === 'number' ? new Date(Number(label)).toISOString().split('T')[0] : String(label);
                 // Find which lift is hovered
                 const hoveredLiftNames = payload
                   .filter((p) => p.dataKey && p.value !== null)
                   .map((p) => {
-                    // dataKey is like "Overhead Press_weight"; extract lift name
-                    const [liftName] = p.dataKey.split('_');
+                    const [liftName] = String(p.dataKey).split('_');
                     return liftName;
                   });
                 return (
                   <div className="p-3 bg-gray-900 rounded shadow text-white min-w-[180px]">
-                    <div className="text-xs text-gray-300 mb-2">{label}</div>
+                    <div className="text-xs text-gray-300 mb-2">{labelDate}</div>
                     {hoveredLiftNames.map((liftName) => {
-                      const sets = getSetsForLiftOnDate(liftName, String(label));
+                      const sets = getSetsForLiftOnDate(liftName, labelDate);
                       return (
                         <div key={liftName} className="mb-1">
                           <span className="font-semibold">{liftName}:</span> {sets || 'No sets'}
