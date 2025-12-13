@@ -1,0 +1,62 @@
+"use client";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import React from 'react';
+
+const IconHome = ({ active }: { active?: boolean }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V11.5z" stroke={active ? '#0ea5e9' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const IconLogbook = ({ active }: { active?: boolean }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M3 5h14v14H3z" stroke={active ? '#0ea5e9' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M7 9h6" stroke={active ? '#0ea5e9' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M7 13h6" stroke={active ? '#0ea5e9' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const IconChart = ({ active }: { active?: boolean }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M3 3v18h18" stroke={active ? '#0ea5e9' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M7 13v5" stroke={active ? '#0ea5e9' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M12 9v9" stroke={active ? '#0ea5e9' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M17 5v13" stroke={active ? '#0ea5e9' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const IconHealth = ({ active }: { active?: boolean }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+    <path d="M20.8 8.6c0 5.2-8.8 10.6-8.8 10.6S3.2 13.8 3.2 8.6a4.4 4.4 0 0 1 8.8-1.4c0 .6.4 1.4 1.4 1.4s1.4-.8 1.4-1.4a4.4 4.4 0 0 1 8.8 1.4z" stroke={active ? '#0ea5e9' : 'currentColor'} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const BottomNav: React.FC = () => {
+  const pathname = usePathname();
+
+  const items = [
+    { href: '/', label: 'Home', Icon: IconHome },
+    { href: '/logbook', label: 'Logbook', Icon: IconLogbook },
+    { href: '/chart', label: 'Chart', Icon: IconChart },
+    { href: '/health', label: 'Health', Icon: IconHealth },
+  ];
+
+  return (
+    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-3xl bg-white/90 dark:bg-neutral-900/90 backdrop-blur rounded-full shadow-lg border border-gray-100 dark:border-neutral-800 px-3 py-2 flex justify-between items-center">
+      {items.map((it) => {
+        const active = pathname === it.href;
+        return (
+          <Link key={it.href} href={it.href} className={`flex-1 text-center py-2 ${active ? 'text-sky-500' : 'text-gray-600 dark:text-gray-300'}`} aria-label={it.label}>
+            <div className="flex flex-col items-center justify-center gap-1">
+              <it.Icon active={active} />
+              <span className="text-xs">{it.label}</span>
+            </div>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+};
+
+export default BottomNav;

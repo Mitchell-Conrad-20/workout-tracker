@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 // import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import HamburgerMenu from '@/components/HamburgerMenu';
+import BottomNav from '@/components/BottomNav';
 import { Providers } from './providers';
 
 // const geistSans = Geist({
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <HamburgerMenu />
           {children}
+          <BottomNav />
         </Providers>
       </body>
     </html>
