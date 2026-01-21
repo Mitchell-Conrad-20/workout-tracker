@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
@@ -271,7 +270,7 @@ export default function HealthPage() {
             <Modal open={saving} onClose={() => setSaving(false)}>
               <h2 className="text-lg font-semibold mb-4">Log Bodyweight</h2>
               <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-                <Input dark type="number" placeholder="Weight" value={weightInput} onChange={e => setWeightInput(e.target.value)} />
+                <Input dark type="text" inputMode="decimal" pattern="[0-9]*\.?[0-9]*" placeholder="Weight" value={weightInput} onChange={e => setWeightInput(e.target.value)} />
                 <DatePicker value={selectedDate} onChange={setSelectedDate} />
                 <Input
                   dark

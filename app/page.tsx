@@ -45,8 +45,15 @@ export default function Home() {
         // Use date-fns for deterministic local date
         const today = format(new Date(), 'yyyy-MM-dd');
         const didWorkoutToday = data.some(l => l.date && l.date.startsWith(today));
-        // Group by date (workout session)
-        const workoutDates = Array.from(new Set(data.map(l => l.date.split('T')[0])));
+        // Group by date (workout session) and limit to current calendar year (year-to-date)
+        const currentYear = new Date().getFullYear();
+        const workoutDates = Array.from(
+          new Set(
+            data
+              .map((l) => l.date.split('T')[0])
+              .filter((d) => new Date(d).getFullYear() === currentYear)
+          )
+        );
         const totalWorkouts = workoutDates.length;
 
         // Group lifts by name
